@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qweave"
+version = "0.1.0"
+description = "Deterministic qubit allocation and routing research core"
+requires-python = ">=3.11"
+dependencies = [
+  "qiskit>=1.0",
+  "networkx>=3.0",
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "ortools>=9.8",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+include = ["qweave*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
