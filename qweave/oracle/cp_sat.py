@@ -1,0 +1,65 @@
+"""Tiny exact CP-SAT oracle for the initial mapping objective."""
+
+from dataclasses import dataclass
+import time
+import networkx as nx
+from ortools.sat.python import cp_model
+
+from qweave.core.types import Mapping
+from qweave.core.validation import validate_mapping
+
+
+@dataclass
+class OracleResult:
+    mapping: Mapping
+    objective: float
+    status: str
+    runtime_seconds: float
+    gap: float | None
+
+
+def solve_initial_mapping(interaction_graph: nx.Graph, coupling_graph: nx.Graph, time_limit: float = 10.0) -> OracleResult:
+    """Solve weighted shortest-path initial mapping exactly for at most 8 qubits."""
+
+    logicals = sorted(interaction_graph.nodes)
+    physicals = sorted(coupling_graph.nodes)
+    if len(logicals) > 8:
+        raise ValueError("CP-SAT oracle is intentionally limited to <= 8 logical qubits")
+    if len(physicals) < len(logicals):
+        raise ValueError("coupling graph has fewer physical qubits than logical qubits")
+    distances = dict(nx.all_pairs_shortest_path_length(coupling_graph))
+    for first, second in interaction_graph.edges:
+        if second not in distances.get(first, {}):
+            raise ValueError("interaction graph requires a path across disconnected hardware components")
+    scale = 1_000_000
+    model = cp_model.CpModel()
+    assignment = {(logical, physical): model.NewBoolVar(f"x_{logical}_{physical}") for logical in logicals for physical in physicals}
+    for logical in logicals:
+        model.Add(sum(assignment[logical, physical] for physical in physicals) == 1)
+    for physical in physicals:
+        model.Add(sum(assignment[logical, physical] for logical in logicals) <= 1)
+    # Linearize pair products so CP-SAT can optimize the quadratic mapping cost.
+    products = []
+    for first, second, data in interaction_graph.edges(data=True):
+        weight = int(round(data.get("weight", 1) * scale))
+        for physical_first in physicals:
+            for physical_second in physicals:
+                product = model.NewBoolVar(f"p_{first}_{second}_{physical_first}_{physical_second}")
+                model.AddMultiplicationEquality(product, [assignment[first, physical_first], assignment[second, physical_second]])
+                products.append(weight * distances[physical_first][physical_second] * product)
+    model.Minimize(sum(products))
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = time_limit
+    solver.parameters.num_search_workers = 1
+    started = time.perf_counter()
+    status_code = solver.Solve(model)
+    runtime = time.perf_counter() - started
+    status = solver.StatusName(status_code)
+    if status_code not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        raise RuntimeError(f"CP-SAT could not find a mapping: {status}")
+    mapping = {logical: next(physical for physical in physicals if solver.Value(assignment[logical, physical])) for logical in logicals}
+    objective = solver.ObjectiveValue() / scale
+    bound = solver.BestObjectiveBound() / scale
+    gap = abs(objective - bound) / abs(objective) if objective else 0.0
+    validate_mapping(mapping, len(logicals), coupling_graph)
+    return OracleResult(mapping, objective, status, runtime, gap)
