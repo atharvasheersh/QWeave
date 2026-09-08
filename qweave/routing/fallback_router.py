@@ -30,7 +30,10 @@ def route_with_fallback(circuit: QuantumCircuit, coupling_graph: nx.Graph, mappi
     output = QuantumCircuit(physical_count, circuit.num_clbits)
     trace: list[dict] = []
     swaps = 0
-    for operation, qargs, cargs in circuit.data:
+    for instruction in circuit.data:
+        operation = instruction.operation if hasattr(instruction, "operation") else instruction[0]
+        qargs = instruction.qubits if hasattr(instruction, "qubits") else instruction[1]
+        cargs = instruction.clbits if hasattr(instruction, "clbits") else instruction[2]
         logicals = [_index(circuit, bit) for bit in qargs]
         if len(logicals) == 2:
             first, second = logicals
@@ -56,4 +59,3 @@ def route_with_fallback(circuit: QuantumCircuit, coupling_graph: nx.Graph, mappi
             output.append(operation, [current[logical] for logical in logicals], cargs)
     validate_two_qubit_legality(output, coupling_graph)
     return RoutingResult(output, current, trace, swaps)
-

@@ -45,11 +45,10 @@ def validate_two_qubit_legality(circuit: object, coupling_graph: nx.Graph) -> bo
     """Check that every two-qubit operation uses an undirected hardware edge."""
 
     for instruction in circuit.data:
-        operation, qargs, _ = instruction
+        qargs = instruction.qubits if hasattr(instruction, "qubits") else instruction[1]
         if len(qargs) != 2:
             continue
         first, second = (_qubit_index(circuit, qubit) for qubit in qargs)
         if first == second or not coupling_graph.has_edge(first, second):
             raise ValueError(f"illegal two-qubit operation on physical qubits {(first, second)}")
     return True
-

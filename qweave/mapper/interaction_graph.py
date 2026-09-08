@@ -24,7 +24,7 @@ def build_interaction_graph(circuit: object, decay: float | None = None) -> nx.G
     graph = nx.Graph()
     graph.add_nodes_from(range(circuit.num_qubits))
     for gate_index, instruction in enumerate(circuit.data):
-        _, qargs, _ = instruction
+        qargs = instruction.qubits if hasattr(instruction, "qubits") else instruction[1]
         if len(qargs) != 2:
             continue
         first, second = (_qubit_index(circuit, qubit) for qubit in qargs)
@@ -34,4 +34,3 @@ def build_interaction_graph(circuit: object, decay: float | None = None) -> nx.G
         weight = graph.get_edge_data(first, second, {}).get("weight", 0)
         graph.add_edge(first, second, weight=weight + contribution)
     return graph
-

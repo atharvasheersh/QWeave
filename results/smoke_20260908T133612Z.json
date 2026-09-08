@@ -1,0 +1,167 @@
+[
+  {
+    "timestamp": "20260908T133612Z",
+    "seed": 7,
+    "circuit_name": "cnot_chain",
+    "logical_qubits": 4,
+    "topology": "line4",
+    "basic": {
+      "depth": 3,
+      "operation_count": 3,
+      "two_qubit_count": 3,
+      "swap_count": 0,
+      "depth_overhead": 0,
+      "relative_depth_overhead": 0.0,
+      "runtime_seconds": 0.00036949999957869295
+    },
+    "weighted": {
+      "depth": 3,
+      "operation_count": 3,
+      "two_qubit_count": 3,
+      "swap_count": 0,
+      "depth_overhead": 0,
+      "relative_depth_overhead": 0.0,
+      "runtime_seconds": 0.00033489999987068586,
+      "mapping": {
+        "1": 1,
+        "2": 2,
+        "0": 0,
+        "3": 3
+      }
+    },
+    "sabre": {
+      "depth": 3,
+      "operation_count": 3,
+      "two_qubit_count": 3,
+      "swap_count": 0,
+      "depth_overhead": 0,
+      "relative_depth_overhead": 0.0,
+      "runtime_seconds": 0.09122579999893787,
+      "seed": 7,
+      "method": "qiskit_sabre"
+    },
+    "validation": true,
+    "cp_sat": {
+      "mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 3
+      },
+      "objective": 3.0,
+      "status": "OPTIMAL",
+      "runtime_seconds": 0.02587369999855582,
+      "gap": 0.0
+    }
+  },
+  {
+    "timestamp": "20260908T133612Z",
+    "seed": 7,
+    "circuit_name": "star",
+    "logical_qubits": 4,
+    "topology": "line4",
+    "basic": {
+      "depth": 5,
+      "operation_count": 5,
+      "two_qubit_count": 5,
+      "swap_count": 2,
+      "depth_overhead": 2,
+      "relative_depth_overhead": 0.6666666666666666,
+      "runtime_seconds": 0.0021177999988140073
+    },
+    "weighted": {
+      "depth": 4,
+      "operation_count": 4,
+      "two_qubit_count": 4,
+      "swap_count": 1,
+      "depth_overhead": 1,
+      "relative_depth_overhead": 0.3333333333333333,
+      "runtime_seconds": 0.0004381000017019687,
+      "mapping": {
+        "0": 1,
+        "1": 0,
+        "2": 2,
+        "3": 3
+      }
+    },
+    "sabre": {
+      "depth": 5,
+      "operation_count": 5,
+      "two_qubit_count": 5,
+      "swap_count": 2,
+      "depth_overhead": 2,
+      "relative_depth_overhead": 0.6666666666666666,
+      "runtime_seconds": 0.012911300000268966,
+      "seed": 7,
+      "method": "qiskit_sabre"
+    },
+    "validation": true,
+    "cp_sat": {
+      "mapping": {
+        "0": 2,
+        "1": 3,
+        "2": 1,
+        "3": 0
+      },
+      "objective": 4.0,
+      "status": "OPTIMAL",
+      "runtime_seconds": 0.011924700000236044,
+      "gap": 0.0
+    }
+  },
+  {
+    "timestamp": "20260908T133612Z",
+    "seed": 7,
+    "circuit_name": "random_like",
+    "logical_qubits": 4,
+    "topology": "line4",
+    "basic": {
+      "depth": 11,
+      "operation_count": 13,
+      "two_qubit_count": 13,
+      "swap_count": 8,
+      "depth_overhead": 8,
+      "relative_depth_overhead": 2.6666666666666665,
+      "runtime_seconds": 0.000833099998999387
+    },
+    "weighted": {
+      "depth": 5,
+      "operation_count": 7,
+      "two_qubit_count": 7,
+      "swap_count": 2,
+      "depth_overhead": 2,
+      "relative_depth_overhead": 0.6666666666666666,
+      "runtime_seconds": 0.0003946999986510491,
+      "mapping": {
+        "0": 1,
+        "3": 2,
+        "1": 0,
+        "2": 3
+      }
+    },
+    "sabre": {
+      "depth": 7,
+      "operation_count": 9,
+      "two_qubit_count": 9,
+      "swap_count": 4,
+      "depth_overhead": 4,
+      "relative_depth_overhead": 1.3333333333333333,
+      "runtime_seconds": 0.01168369999868446,
+      "seed": 7,
+      "method": "qiskit_sabre"
+    },
+    "validation": true,
+    "cp_sat": {
+      "mapping": {
+        "0": 1,
+        "1": 0,
+        "2": 3,
+        "3": 2
+      },
+      "objective": 7.0,
+      "status": "OPTIMAL",
+      "runtime_seconds": 0.02447539999957371,
+      "gap": 0.0
+    }
+  }
+]
