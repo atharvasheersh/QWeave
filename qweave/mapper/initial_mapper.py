@@ -38,7 +38,11 @@ def initial_mapping(circuit: object, coupling_graph: nx.Graph, decay: float | No
         logical = min(
             remaining,
             key=lambda node: (
-                -sum(interactions[node][mapped].get("weight", 0) for mapped in mapping),
+                -sum(
+                    interactions[node][mapped].get("weight", 0)
+                    for mapped in mapping
+                    if interactions.has_edge(node, mapped)
+                ),
                 -logical_degree[node],
                 node,
             ),
@@ -58,4 +62,3 @@ def initial_mapping(circuit: object, coupling_graph: nx.Graph, decay: float | No
         trace.append({"logical": logical, "physical": physical, "cost": cost})
         remaining.remove(logical)
     return MappingResult(mapping=mapping, trace=trace)
-
