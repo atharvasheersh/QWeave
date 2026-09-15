@@ -8,9 +8,10 @@ runtime/test dependencies but do not hash-lock build-system downloads.
 
 Installed versions: Qiskit 2.5.2, NetworkX 3.6.1, NumPy 2.4.6, pandas
 3.0.5, OR-Tools 9.15.6755, pytest 9.1.1. Local OS: Windows. Original suite:
-12 passed in 17.30 seconds. The final expanded suite (including three
-unitary-layout tests and a raw-record preservation test): 16 passed in
-5.83 seconds using `python -m pytest -q -p no:cacheprovider` with an
+12 passed in 17.30 seconds. The later expanded suite (including four
+unitary-layout tests, a pilot-fixture test, and a raw-record preservation
+test): 18 passed in 2.02 seconds using
+`python -m pytest -q -p no:cacheprovider` with an
 isolated fixture directory. The sandboxed initial pytest invocation emitted
 a cache-directory permission warning; a later `tmp_path` fixture required
 an unrestricted local test run because the sandbox denied access to its
@@ -33,6 +34,13 @@ and its CSV peer. Their SHA-256 hashes are respectively
 `B6147831FA71C49317833A829F8BD645FEB8840B12855DEB2EE5EB4EF16E5E46`
 and `152537B927966796BB3D5D3810D03D4886200F95AD77C446101B3FDB4515B7AF`.
 The records remain local and ignored by Git.
+
+The deterministic pilot generator produced 27 circuit/topology cases in
+`run_artifacts/pilot_manifest/pilot_1ff4bc8babde470cb78f3ebea04b0a81.json`
+(SHA-256 `C0B7C62DEAF182BF0B8723D0CD18C904A8008A736295E0D2ABDCB52825B803B2`).
+This manifest is ignored raw development data, not a comparative results
+file. Its tests check repeatability, unique case IDs, QASM2 round-trip
+width, and connected hardware graphs.
 
 For CX-only `cnot_chain`, `star`, and `random_like` on `line4`, the rerun
 reported compiled `(depth, SWAPs)` as follows:

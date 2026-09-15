@@ -25,11 +25,18 @@ in smoke runs; use that same objective for the oracle comparison.
 
 ## Dataset specification to freeze before measurement
 
-Create a versioned, deterministic circuit generator with three distinct
-families: structured CX/Clifford circuits (chains, stars, GHZ and layered
-patterns), random two-qubit interaction circuits, and small named algorithm
-circuits after their gate decomposition is fixed. Start at 4, 6, and 8 logical
-qubits with fixed depths; expand only after the semantic acceptance gate in
+The versioned `pilot_dataset.py` now generates 27 **pilot** instances: GHZ,
+layered CX, and seeded interaction circuits at 4, 6, and 8 logical qubits,
+each on a connected path, ring, and two-row grid. It stores source QASM2,
+SHA-256, generator version, seed, and explicit graph edges. Use
+`python scripts/build_pilot_manifest.py` to create a new exclusive raw
+manifest. The pilot is for harness development and adversarial checks; it
+is not the frozen comparative dataset.
+
+The final dataset should add more structured CX/Clifford patterns and small
+named algorithm circuits after their gate decomposition is fixed. Freeze
+instance counts, gate set, and depths separately, and expand only after the
+semantic acceptance gate in
 `VALIDATION_SCOPE.md` passes. Use connected path, ring, and small-grid graphs
 with explicit zero-based edge lists. Record graph size, edges, source circuit
 QASM or a stable serialized representation, source hash, family, generator

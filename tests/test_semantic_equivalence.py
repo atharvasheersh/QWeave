@@ -62,3 +62,18 @@ def test_unitary_oracle_detects_incorrect_final_layout() -> None:
     assert routed.swap_count > 0
     assert _equivalent_under_layouts(circuit, routed.circuit, initial, routed.final_mapping)
     assert not _equivalent_under_layouts(circuit, routed.circuit, initial, initial)
+
+
+def test_six_qubit_mixed_circuit_remains_equivalent() -> None:
+    circuit = QuantumCircuit(6)
+    circuit.h(0)
+    circuit.cx(0, 5)
+    circuit.rz(0.7, 5)
+    circuit.cx(2, 4)
+    circuit.x(3)
+    circuit.cx(3, 1)
+    circuit.cx(5, 2)
+    initial = {0: 3, 1: 0, 2: 5, 3: 2, 4: 1, 5: 4}
+    routed = route_with_fallback(circuit, nx.path_graph(6), initial)
+    assert routed.swap_count > 0
+    assert _equivalent_under_layouts(circuit, routed.circuit, initial, routed.final_mapping)

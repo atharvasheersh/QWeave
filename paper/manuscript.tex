@@ -133,13 +133,14 @@ split and separate ablations for mapping, scheduling, and routing.
 
 \section{Evidence Status and Limitations}
 The repository currently contains three four-qubit CX-only smoke circuits on
-a four-site line and a small test suite. A fresh local rerun passed 16 tests
+a four-site line and a small test suite. A fresh local rerun passed 18 tests
 and produced edge-legal smoke outputs under Python 3.11.15 and Qiskit
 2.5.2. The small unitary-layout tests exercise the deterministic router,
 but the existing smoke records mark edge legality only and do not include
 a Qiskit-layout-aware semantic check for the SABRE output. The smoke records
 cannot establish population-level performance or a general correctness
-claim. The planned circuit generator, frozen comparative dataset,
+claim. A versioned 27-case pilot fixture manifest now supports harness
+development but has no comparative results. The frozen comparative dataset,
 SABRE-layout semantic audit, scheduler, and GNN--PPO policy are unfinished.
 
 \section{Conclusion}

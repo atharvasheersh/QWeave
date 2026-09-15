@@ -24,8 +24,8 @@ required before a result can support a paper claim.
 
 ## Small-instance semantic test
 
-`tests/test_semantic_equivalence.py` tests equal-width, four-qubit unitary
-circuits. It forms the wire-permutation operators for the initial and final
+`tests/test_semantic_equivalence.py` tests equal-width, four- and six-qubit
+unitary circuits. It forms the wire-permutation operators for the initial and final
 layouts and checks `U_routed P_initial = P_final U_logical` numerically. It also
 checks that the oracle rejects a wrong final layout. This is a test of the
 deterministic router; it is not yet a production validator for arbitrary
