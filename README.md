@@ -51,6 +51,8 @@ The CP-SAT implementation is an exact initial-mapping oracle for small instances
 
 The pytest suite covers graph weights and decay, deterministic/injective mapping, strict local-search descent, shortest-path tie-breaking, routing legality and disconnected hardware, validation failures, SABRE smoke execution, and a known tiny oracle optimum. Randomness is explicit and seeded. Results include configuration, seed, timestamp, metrics, and validation status. Experimental superiority and novelty are not claimed before measured results exist.
 
+For the next comparative study, see [the experiment protocol](docs/EXPERIMENT_PROTOCOL.md), [validation scope](docs/VALIDATION_SCOPE.md), and [local baseline audit](docs/BASELINE_AUDIT.md). The internal [manuscript draft](paper/manuscript.tex) describes the deterministic method and planned evaluation; its main results are pending.
+
 ## Week-1 status and future integration
 
 Implemented: weighted interaction graph, initial mapping, local search, deterministic fallback routing, Basic and SABRE baselines, legality checks, metrics, CP-SAT mapping oracle, tests, and reproducible smoke comparisons. Deferred: PPO, GNNs, Gymnasium environments, neural routing, learned policies, and full exact routing formulations.
