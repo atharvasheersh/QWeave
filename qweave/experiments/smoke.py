@@ -4,6 +4,7 @@ import csv
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 from qiskit import QuantumCircuit
 import networkx as nx
 
@@ -56,11 +57,13 @@ def run_smoke(output_dir: str | Path = "results", seed: int = 7) -> Path:
         if circuit.num_qubits <= 6:
             record["cp_sat"] = solve_initial_mapping(build_interaction_graph(circuit), graph, 5.0).__dict__
         records.append(record)
-    json_path = output / f"smoke_{timestamp}.json"
-    csv_path = output / f"smoke_{timestamp}.csv"
-    json_path.write_text(json.dumps(records, indent=2, default=str), encoding="utf-8")
+    run_id = f"{timestamp}_{uuid4().hex}"
+    json_path = output / f"smoke_{run_id}.json"
+    csv_path = output / f"smoke_{run_id}.csv"
+    with json_path.open("x", encoding="utf-8") as handle:
+        json.dump(records, handle, indent=2, default=str)
     rows = [{"circuit_name": item["circuit_name"], "topology": item["topology"], "mapper": mapper, **metrics} for item in records for mapper, metrics in item.items() if mapper in {"basic", "weighted", "sabre"}]
-    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+    with csv_path.open("x", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=sorted({key for row in rows for key in row}))
         writer.writeheader()
         writer.writerows(rows)
