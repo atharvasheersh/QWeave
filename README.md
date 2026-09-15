@@ -53,6 +53,8 @@ The pytest suite covers graph weights and decay, deterministic/injective mapping
 
 For the next comparative study, see [the experiment protocol](docs/EXPERIMENT_PROTOCOL.md), [validation scope](docs/VALIDATION_SCOPE.md), and [local baseline audit](docs/BASELINE_AUDIT.md). The internal [manuscript draft](paper/manuscript.tex) describes the deterministic method and planned evaluation; its main results are pending.
 
+The earlier [research blueprint](docs/blueprint/README.md) is archived with its PDF and editable sources. It is planning material; the implemented status is described here and in the baseline audit.
+
 ## Week-1 status and future integration
 
 Implemented: weighted interaction graph, initial mapping, local search, deterministic fallback routing, Basic and SABRE baselines, legality checks, metrics, CP-SAT mapping oracle, tests, and reproducible smoke comparisons. Deferred: PPO, GNNs, Gymnasium environments, neural routing, learned policies, and full exact routing formulations.
