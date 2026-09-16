@@ -2,6 +2,8 @@
 
 import networkx as nx
 
+from .qiskit_adapter import validate_hardware_graph
+
 
 def coupling_graph_from_edges(edges: list[tuple[int, int]], num_qubits: int | None = None) -> nx.Graph:
     """Build an undirected hardware graph from physical edge pairs."""
@@ -10,8 +12,7 @@ def coupling_graph_from_edges(edges: list[tuple[int, int]], num_qubits: int | No
     if num_qubits is not None:
         graph.add_nodes_from(range(num_qubits))
     graph.add_edges_from(edges)
-    if not graph.nodes:
-        raise ValueError("coupling graph must contain at least one physical qubit")
+    validate_hardware_graph(graph)
     return graph
 
 

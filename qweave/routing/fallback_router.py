@@ -1,16 +1,13 @@
 """Correctness-first deterministic SWAP insertion router."""
 
+import networkx as nx
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import SwapGate
-import networkx as nx
 
+from qweave.core.qiskit_adapter import physical_output_circuit, source_operations, validate_hardware_graph
 from qweave.core.types import Mapping, RoutingResult
-from qweave.core.validation import validate_mapping, validate_mapping_inverse, validate_two_qubit_legality
+from qweave.core.validation import validate_mapping, validate_mapping_inverse, validate_routing_result
 from .shortest_path import deterministic_shortest_path
-
-
-def _index(circuit: QuantumCircuit, bit: object) -> int:
-    return int(circuit.find_bit(bit).index)
 
 
 def route_with_fallback(circuit: QuantumCircuit, coupling_graph: nx.Graph, mapping: Mapping) -> RoutingResult:
@@ -21,20 +18,17 @@ def route_with_fallback(circuit: QuantumCircuit, coupling_graph: nx.Graph, mappi
     in the internal inverse layout and require no special handling.
     """
 
+    operations = source_operations(circuit)
+    physical_count = validate_hardware_graph(coupling_graph, circuit.num_qubits)
     validate_mapping(mapping, circuit, coupling_graph)
     current = dict(mapping)
     inverse = validate_mapping_inverse(current)
-    physical_count = max(coupling_graph.nodes, default=-1) + 1
-    if any(not isinstance(node, int) or node < 0 for node in coupling_graph.nodes):
-        raise ValueError("physical qubit labels must be non-negative integers")
-    output = QuantumCircuit(physical_count, circuit.num_clbits)
+    output = physical_output_circuit(circuit, physical_count)
     trace: list[dict] = []
     swaps = 0
-    for instruction in circuit.data:
-        operation = instruction.operation if hasattr(instruction, "operation") else instruction[0]
-        qargs = instruction.qubits if hasattr(instruction, "qubits") else instruction[1]
-        cargs = instruction.clbits if hasattr(instruction, "clbits") else instruction[2]
-        logicals = [_index(circuit, bit) for bit in qargs]
+    for item in operations:
+        operation = item.operation
+        logicals = item.qubits
         if len(logicals) == 2:
             first, second = logicals
             source, target = current[first], current[second]
@@ -52,10 +46,15 @@ def route_with_fallback(circuit: QuantumCircuit, coupling_graph: nx.Graph, mappi
                         current[right_logical] = left
                     inverse[left], inverse[right] = right_logical, left_logical
                     swaps += 1
-                    trace.append({"operation": "swap", "edge": [left, right], "mapping": dict(current)})
-            output.append(operation, [current[first], current[second]], cargs)
-            trace.append({"operation": operation.name, "logical_qubits": logicals, "physical_qubits": [current[first], current[second]]})
+                    trace.append({"kind": "inserted_swap", "operation": "swap", "edge": [left, right], "mapping": dict(current)})
+            physical = [current[first], current[second]]
+            output.append(operation, physical, [])
         else:
-            output.append(operation, [current[logical] for logical in logicals], cargs)
-    validate_two_qubit_legality(output, coupling_graph)
-    return RoutingResult(output, current, trace, swaps)
+            physical = [current[logical] for logical in logicals]
+            output.append(operation, physical, [])
+        trace.append({"kind": "source_gate", "operation": operation.name,
+                      "source_index": item.source_index, "logical_qubits": list(logicals),
+                      "physical_qubits": physical})
+    result = RoutingResult(output, current, trace, swaps)
+    validate_routing_result(circuit, result, mapping, coupling_graph)
+    return result

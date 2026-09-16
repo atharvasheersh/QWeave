@@ -2,12 +2,7 @@
 
 import networkx as nx
 
-
-def _qubit_index(circuit: object, qubit: object) -> int:
-    try:
-        return int(circuit.find_bit(qubit).index)
-    except AttributeError:
-        return int(getattr(qubit, "index", getattr(qubit, "_index")))
+from qweave.core.qiskit_adapter import source_operations
 
 
 def build_interaction_graph(circuit: object, decay: float | None = None) -> nx.Graph:
@@ -21,16 +16,16 @@ def build_interaction_graph(circuit: object, decay: float | None = None) -> nx.G
 
     if decay is not None and not 0 < decay <= 1:
         raise ValueError("decay must satisfy 0 < decay <= 1")
+    operations = source_operations(circuit)
     graph = nx.Graph()
     graph.add_nodes_from(range(circuit.num_qubits))
-    for gate_index, instruction in enumerate(circuit.data):
-        qargs = instruction.qubits if hasattr(instruction, "qubits") else instruction[1]
-        if len(qargs) != 2:
+    for item in operations:
+        if len(item.qubits) != 2:
             continue
-        first, second = (_qubit_index(circuit, qubit) for qubit in qargs)
+        first, second = item.qubits
         contribution = 1.0 if decay is not None else 1
         if decay is not None:
-            contribution = decay**gate_index
+            contribution = decay**item.source_index
         weight = graph.get_edge_data(first, second, {}).get("weight", 0)
         graph.add_edge(first, second, weight=weight + contribution)
     return graph

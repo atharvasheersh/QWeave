@@ -3,6 +3,7 @@
 import math
 import networkx as nx
 
+from qweave.core.qiskit_adapter import validate_hardware_graph
 from qweave.core.types import MappingResult, stable_node_key
 from .interaction_graph import build_interaction_graph
 
@@ -22,8 +23,7 @@ def initial_mapping(circuit: object, coupling_graph: nx.Graph, decay: float | No
     """
 
     interactions = build_interaction_graph(circuit, decay)
-    if len(coupling_graph) < circuit.num_qubits:
-        raise ValueError("coupling graph has fewer physical than logical qubits")
+    validate_hardware_graph(coupling_graph, circuit.num_qubits)
     closeness = nx.closeness_centrality(coupling_graph)
     physical_order = sorted(
         coupling_graph.nodes,

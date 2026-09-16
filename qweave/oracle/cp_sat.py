@@ -1,11 +1,13 @@
 """Tiny exact CP-SAT oracle for the initial mapping objective."""
 
 from dataclasses import dataclass
+import math
 import time
 import networkx as nx
 from ortools.sat.python import cp_model
 
 from qweave.core.types import Mapping
+from qweave.core.qiskit_adapter import validate_hardware_graph
 from qweave.core.validation import validate_mapping
 
 
@@ -23,14 +25,21 @@ def solve_initial_mapping(interaction_graph: nx.Graph, coupling_graph: nx.Graph,
 
     logicals = sorted(interaction_graph.nodes)
     physicals = sorted(coupling_graph.nodes)
+    if not logicals:
+        raise ValueError("oracle interaction graph must contain logical qubits")
+    if logicals != list(range(len(logicals))):
+        raise ValueError("oracle logical nodes must be contiguous indices 0..n-1")
     if len(logicals) > 8:
         raise ValueError("CP-SAT oracle is intentionally limited to <= 8 logical qubits")
-    if len(physicals) < len(logicals):
-        raise ValueError("coupling graph has fewer physical qubits than logical qubits")
+    validate_hardware_graph(coupling_graph, len(logicals))
+    if not nx.is_connected(coupling_graph):
+        raise ValueError("CP-SAT mapping oracle requires connected hardware")
+    if not math.isfinite(time_limit) or time_limit <= 0:
+        raise ValueError("oracle time limit must be finite and positive")
     distances = dict(nx.all_pairs_shortest_path_length(coupling_graph))
-    for first, second in interaction_graph.edges:
-        if second not in distances.get(first, {}):
-            raise ValueError("interaction graph requires a path across disconnected hardware components")
+    if any(not math.isfinite(data.get("weight", 1)) or data.get("weight", 1) < 0
+           for _, _, data in interaction_graph.edges(data=True)):
+        raise ValueError("oracle interaction weights must be finite and non-negative")
     scale = 1_000_000
     model = cp_model.CpModel()
     assignment = {(logical, physical): model.NewBoolVar(f"x_{logical}_{physical}") for logical in logicals for physical in physicals}
