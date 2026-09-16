@@ -8,3 +8,5 @@ venv/
 .coverage
 .uv-cache/
 run_artifacts/
+# Exploratory scheduler checks stay local unless a reviewed record is added explicitly.
+results/scheduler_check_*.json
