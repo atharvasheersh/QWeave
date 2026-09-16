@@ -3,13 +3,14 @@
 The September 8 smoke records are sanity checks on three four-qubit CX-only
 circuits and one line topology. They are not the benchmark dataset or evidence
 of general superiority. This protocol fixes decisions needed to construct a
-credible dataset before any learned routing or depth-scheduling comparison.
+credible dataset before any learned routing or comparative scheduling claim.
 
 ## Questions and methods
 
 RQ1: How does weighted initial mapping plus strict pairwise refinement and the
 deterministic router compare with identity-plus-router and Qiskit SABRE on
-legal circuits? RQ2 (future): What changes when scheduling is added? RQ3
+legal circuits? RQ2: What changes when the implemented scheduler is applied
+to each fixed legal routed circuit? RQ3
 (future): What changes when a learned policy is added, including validity and
 inference/training cost? Do not combine RQ2/RQ3 results with RQ1 in a single
 unqualified claim.
@@ -22,6 +23,19 @@ eight logical qubits; it is neither an exact routing baseline nor a claim of
 optimal compiled depth. Record `OPTIMAL` versus `FEASIBLE`, bound/gap, and
 timeout. The current mapper/refiner use un-decayed integer interaction counts
 in smoke runs; use that same objective for the oracle comparison.
+
+For RQ2, keep each method's routed output fixed and record
+`scheduled_depth - routed_depth`, SWAP count before/after, unit-duration
+makespan, and validation status. Do not compare Basic's routed depth to
+weighted's scheduled depth as a scheduler effect. The current scheduler
+preserves physical-wire gate order and does not perform proven commutations;
+Qiskit already computes parallel dependency depth, so a zero unit-duration
+depth change is expected. `scripts/run_scheduler_check.py` records this
+stage check on three four-qubit smoke circuits only. It is not a frozen
+benchmark. SABRE's final-layout semantic audit is implemented only for
+equal-width unitary circuits of at most six qubits; wider and idle-site cases
+remain pending. The
+CP-SAT record has no routed or scheduled depth.
 
 ## Dataset specification to freeze before measurement
 
