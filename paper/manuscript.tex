@@ -4,9 +4,9 @@
 \usepackage{amsmath,amssymb}
 \usepackage{url}
 \usepackage{booktabs}
-\title{QWeave: A Correctness-First Framework for Hardware-Aware Qubit Mapping and Routing}
-\author{QWeave Research Team\\\small Internal research draft; author order to be agreed by the team}
-\date{16 September 2026}
+\title{QWeave: Correctness-First Deterministic and Learned Qubit Routing}
+\author{QWeave Research Team}
+\date{21 September 2026}
 
 \begin{document}
 \maketitle
@@ -20,11 +20,14 @@ weighted interaction-graph mapper, strict local improvement, and a
 shortest-path SWAP router. Identity mapping with the same router, Qiskit
 SABRE, and a small exact initial-mapping objective oracle provide distinct
 reference points. We specify route-replay, legality, and small unitary-layout
-checks, as well as a separately measured dependency-preserving scheduler and
-a paired, versioned benchmark protocol. The current code passes small tests
-and smoke checks; a frozen multi-instance benchmark and learned GNN--PPO
-routing have not yet been completed. Consequently, this draft makes no
-claim of general depth or SWAP superiority.
+checks, as well as a separately measured dependency-preserving scheduler.
+We add a guarded Gymnasium environment, a masked graph actor--critic, and a
+compact PPO implementation with deterministic fallback. A frozen 30-case
+synthetic suite separates training, validation, and four held-out
+family--topology test cases. Across 64 test records, every output passed the
+small-unitary semantic check. The learned, no-message-passing, and untrained
+controls had identical aggregate median depth and SWAP count, so the study
+does not support attributing an improvement to learning.
 \end{abstract}
 
 \section{Introduction}
@@ -39,9 +42,10 @@ baseline, rather than a straw-man comparator.
 QWeave currently supplies a deterministic reference path that makes the
 mapping convention, tie-breaking, layout updates, and metric extraction
 explicit. The research question is whether its weighted static mapping
-surrogate helps on defined circuit families once the routed circuits are
-checked for legality and semantics. An implemented scheduler can now be
-measured on each fixed legal route; learned routing remains a later stage.
+surrogate or guarded learned router helps on defined circuit families once
+the routed circuits are checked for legality and semantics. The scheduler is
+measured on each fixed legal route, while learned routing is evaluated through
+separate message-passing and training controls.
 Existing reinforcement-learning
 and graph-guided routing studies \cite{pozzi2020rl,sinha2022gnn} already
 establish that learning for this problem is not a novelty claim by itself.
@@ -133,6 +137,30 @@ reflects this dependency parallelism, so a zero depth change is expected.
 Positive per-gate durations additionally yield a timed makespan but do not
 constitute a calibrated hardware result.
 
+\section{Guarded Learned Router}
+The learned path is isolated from the deterministic compiler. Its Gymnasium
+environment exposes an \textsc{Execute} action and one SWAP action for each
+sorted hardware edge. The observation contains five features per physical
+node, four features per hardware edge, a five-value frontier description,
+the current logical-to-physical mapping, and a binary legal-action mask.
+Illegal actions do not mutate the circuit or layout. If the policy repeatedly
+fails to make progress, or reaches the episode limit, the environment routes
+the current operation with the validated deterministic shortest-path method.
+Every completed episode is replay-validated before a routing result is
+returned. This guard ensures termination and legality on connected undirected
+hardware with contiguous labels, but may hide a weak policy behind fallback;
+fallback counts are therefore reported.
+
+The actor--critic encodes node features and performs two rounds of
+edge-conditioned message passing. It scores every hardware-edge SWAP and the
+\textsc{Execute} action after applying the legal-action mask. PPO uses clipped
+policy ratios, generalized advantage estimation, value and entropy terms, and
+gradient clipping. We train three explicit seeds. A zero-message-passing PPO
+control retains the optimizer and reward, while an untrained graph control
+retains the architecture without PPO updates. All learned variants begin with
+the weighted deterministic initial mapping, which makes this a routing-policy
+comparison rather than a learned-layout experiment.
+
 \section{Validation and Experimental Design}
 The structural validator checks mapping completeness, injectivity, source
 gate replay, inserted SWAP consistency, global phase, and undirected edge
@@ -150,46 +178,67 @@ incorrectly reported final layout. This is not yet a general semantic
 validator for measurements, resets, dynamic conditions, directed couplers,
 or wider hardware. Those cases will be excluded until explicitly supported.
 
-The planned benchmark freezes source circuits and graph edge lists before
-evaluation. It will include structured, random-interaction, and named
-algorithm families at stated widths on connected path, ring, and grid
-graphs. Every method will receive the same source instance and coupling
-interpretation. We will record source/compiled depth, depth overhead,
-explicit SWAP count, two-qubit and total operation counts, runtime,
-validity, layouts, seeds, software versions, and source hashes. Source depth
-is a reference, not an optimal legal depth. SABRE will be evaluated with
-multiple stated seeds, while runtime will be repeated after warmup on a
-fixed machine. Paired differences over distinct instances, family medians,
-bootstrap intervals, validity rates, and counterexamples will be reported.
-Scheduling will be reported as a within-route stage delta with SWAP counts
-before and after; CP-SAT will report only its scaled mapping objective.
-The full frozen rules are maintained in the repository's experiment
-protocol. Learned-policy training will require a held-out family/topology
-split and separate ablations for mapping, scheduling, and routing.
+Benchmark version 1.0 freezes source circuits and graph edge lists before
+evaluation. It contains 30 synthetic four- and six-qubit cases from five
+families on connected path, ring, and two-row-grid graphs. Twelve training
+cases use GHZ, layered-CX, and seeded-interaction families on path and ring;
+14 validation cases cover grid transfer and held-out families on path/ring;
+four untouched test cases combine the held-out star and distant-pair families
+with grid hardware. Every method receives the same source instance and coupling
+interpretation. We record source/compiled depth, depth overhead, explicit SWAP
+count, operation counts, runtime, validity, layouts, seeds, versions, and hashes.
+Source depth is a reference, not an optimal legal depth. SABRE uses five stated
+seeds; learned training uses three. Runtime is the median of three measurements
+after one warmup on the same machine. Seeds are collapsed within each case
+before the four cases are aggregated. Scheduling is reported as a within-route
+stage delta; CP-SAT reports only its scaled mapping objective. The suite is too
+small for population-level or state-of-the-art claims.
 
-\section{Evidence Status and Limitations}
-The repository currently contains three four-qubit CX-only smoke circuits on
-a four-site line and a small test suite. A fresh local rerun passed 36 tests
-under Python 3.11.15 and Qiskit 2.5.2. The small unitary-layout tests exercise the deterministic router,
-but the existing smoke records mark edge legality only and do not include
-a Qiskit-layout-aware semantic check for the SABRE output. The smoke records
-cannot establish population-level performance or a general correctness
-claim. A versioned 27-case pilot fixture manifest now supports harness
-development but has no comparative results. The frozen comparative dataset,
-broader SABRE-layout semantic audit and GNN--PPO policy are unfinished. A separate
-three-circuit scheduling sanity record applies the new scheduler to fixed
-Basic, weighted, and SABRE outputs. All nine unit-duration depth deltas were
-zero; deterministic paths and equal-width SABRE output passed the small
-unitary check. This narrow check is not a benchmark
-or evidence of a general scheduling benefit.
+\section{Results and Limitations}
+A fresh local run passed 52 tests under Python 3.11.15 and Qiskit 2.5.2.
+Table~\ref{tab:test-results} reports the frozen four-case test aggregate.
+For seeded methods, each case contributes its within-case seed median before
+the median over cases. All 64 compiled outputs passed the small-unitary layout
+check. Every unit-duration scheduling delta was zero.
+
+\begin{table}[t]
+\centering
+\caption{Held-out test summary. Runtime is median wall time in seconds.}
+\label{tab:test-results}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Method & Depth & SWAP & Runtime & Fallback \\
+\midrule
+Basic & 9.5 & 3.0 & 0.0085 & 0.0 \\
+Weighted & 7.5 & 1.5 & 0.0083 & 0.0 \\
+SABRE & 10.0 & 2.5 & 0.0052 & 0.0 \\
+GNN--PPO & 7.5 & 1.0 & 0.0588 & 0.0 \\
+No-GNN PPO & 7.5 & 1.0 & 0.0260 & 0.0 \\
+Untrained GNN & 7.5 & 1.0 & 0.0594 & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The aggregate GNN--PPO values are numerically lower than Basic and SABRE on
+this small suite, but this cannot be attributed to the GNN or PPO: both
+controls have the same aggregate depth and SWAP medians. The untrained control
+also contains severe seed-specific outliers and invoked deterministic fallback
+16 times across its 12 records, whereas the two trained variants used no test
+fallbacks. GNN--PPO inference was about seven times the median weighted-router
+runtime in this Python implementation. These observations motivate larger
+training budgets, more test instances, confidence intervals, named algorithm
+circuits, and hardware-directed studies. They do not establish routing
+superiority, novelty, or production readiness.
 
 \section{Conclusion}
-QWeave now has an explicit deterministic mapping and routing reference with
-a small mapping oracle and auditable smoke records. The next scientific
-gate is a semantically validated, paired benchmark with frozen inputs and
-versioned outputs. Only after that gate can depth and SWAP differences be
-reported as experimental findings; the implemented scheduler and any later
-learned routing must be assessed through isolated stage comparisons.
+QWeave now combines an explicit deterministic reference, a small mapping
+oracle, fixed-route scheduling, and a guarded learned router with auditable
+ablation controls. The frozen v1 run establishes implementation validity on
+its declared small-unitary scope, while showing that the present aggregate
+results do not isolate a benefit from message passing or PPO. The next
+scientific gate is a larger preregistered study with stronger training,
+additional circuit families, confidence intervals, and independent reruns.
 
 \bibliographystyle{plain}
 \bibliography{references}

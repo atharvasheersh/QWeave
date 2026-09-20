@@ -67,7 +67,14 @@ The pytest suite covers graph weights and decay, deterministic/injective mapping
 
 `scripts/run_scheduler_check.py` writes a new immutable JSON record for three four-qubit smoke circuits on a four-site line. It reports Basic, weighted, and SABRE routed versus scheduled depth on each *fixed* compiled circuit. CP-SAT contributes only its small initial-mapping objective/status. This check is not a frozen benchmark or evidence of general improvement.
 
-For the comparative study, see [the experiment protocol](docs/EXPERIMENT_PROTOCOL.md), [learned-routing scope](docs/LEARNED_ROUTING.md), [validation scope](docs/VALIDATION_SCOPE.md), and [local baseline audit](docs/BASELINE_AUDIT.md). The internal [manuscript draft](paper/manuscript.tex) is updated only from reviewed raw records.
+For the comparative study, see [the experiment protocol](docs/EXPERIMENT_PROTOCOL.md), [learned-routing scope](docs/LEARNED_ROUTING.md), [validation scope](docs/VALIDATION_SCOPE.md), and [local baseline audit](docs/BASELINE_AUDIT.md). The [manuscript source](paper/manuscript.tex) is updated only from reviewed raw records.
+
+The frozen benchmark-v1 run produced 64 test records: every output passed the
+small-unitary check and every fixed-route unit-duration scheduling delta was
+zero. GNN--PPO, no-GNN PPO, and the untrained graph control had the same
+aggregate depth and SWAP medians, so the run does not isolate a learning
+benefit. See the [reviewed report](results/BENCHMARK_V1_REPORT.md) and
+[machine-readable summary](results/benchmark_v1_summary.json).
 
 The earlier [research blueprint](docs/blueprint/README.md) is archived with its PDF and editable sources. It is planning material; the implemented status is described here and in the baseline audit.
 

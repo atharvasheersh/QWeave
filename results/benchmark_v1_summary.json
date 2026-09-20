@@ -1,0 +1,99 @@
+{
+  "configuration": {
+    "training_steps": 256,
+    "policy_seeds": [
+      7,
+      17,
+      29
+    ],
+    "sabre_seeds": [
+      3,
+      7,
+      11,
+      17,
+      29
+    ],
+    "runtime_warmups": 1,
+    "runtime_repeats": 3,
+    "test_case_ids": [
+      "star_4q_grid2",
+      "distant_pairs_4q_grid2",
+      "star_6q_grid2",
+      "distant_pairs_6q_grid2"
+    ]
+  },
+  "summary": [
+    {
+      "method": "basic",
+      "test_cases": 4,
+      "seed_runs": 4,
+      "median_depth": 9.5,
+      "median_swap_count": 3.0,
+      "median_runtime_seconds": 0.008497699978761375,
+      "median_schedule_depth_delta": 0.0,
+      "median_fallback_count": 0.0,
+      "semantic_valid_rate": 1.0
+    },
+    {
+      "method": "gnn_ppo",
+      "test_cases": 4,
+      "seed_runs": 12,
+      "median_depth": 7.5,
+      "median_swap_count": 1.0,
+      "median_runtime_seconds": 0.05883424999774434,
+      "median_schedule_depth_delta": 0.0,
+      "median_fallback_count": 0.0,
+      "semantic_valid_rate": 1.0
+    },
+    {
+      "method": "gnn_untrained",
+      "test_cases": 4,
+      "seed_runs": 12,
+      "median_depth": 7.5,
+      "median_swap_count": 1.0,
+      "median_runtime_seconds": 0.05940575001295656,
+      "median_schedule_depth_delta": 0.0,
+      "median_fallback_count": 0.0,
+      "semantic_valid_rate": 1.0
+    },
+    {
+      "method": "mlp_ppo",
+      "test_cases": 4,
+      "seed_runs": 12,
+      "median_depth": 7.5,
+      "median_swap_count": 1.0,
+      "median_runtime_seconds": 0.026006749976659194,
+      "median_schedule_depth_delta": 0.0,
+      "median_fallback_count": 0.0,
+      "semantic_valid_rate": 1.0
+    },
+    {
+      "method": "sabre",
+      "test_cases": 4,
+      "seed_runs": 20,
+      "median_depth": 10.0,
+      "median_swap_count": 2.5,
+      "median_runtime_seconds": 0.0052328999736346304,
+      "median_schedule_depth_delta": 0.0,
+      "median_fallback_count": 0.0,
+      "semantic_valid_rate": 1.0
+    },
+    {
+      "method": "weighted",
+      "test_cases": 4,
+      "seed_runs": 4,
+      "median_depth": 7.5,
+      "median_swap_count": 1.5,
+      "median_runtime_seconds": 0.008308550022775307,
+      "median_schedule_depth_delta": 0.0,
+      "median_fallback_count": 0.0,
+      "semantic_valid_rate": 1.0
+    }
+  ],
+  "interpretation_limits": [
+    "This is a small synthetic benchmark and is not a SOTA comparison.",
+    "Policy seeds are training replicates; seed rows for one case are collapsed before case aggregation.",
+    "The no-message-passing and untrained controls isolate architecture and PPO training only within this setup.",
+    "Scheduling preserves fixed-route wire order, so unit-duration depth deltas may be zero."
+  ]
+}
