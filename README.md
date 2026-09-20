@@ -1,6 +1,6 @@
 # QWeave
 
-QWeave studies hardware-aware qubit allocation, deterministic routing, and depth minimisation for NISQ quantum compilation. The deterministic core and a separate dependency-preserving scheduler are implemented; learned routing will be integrated separately.
+QWeave studies hardware-aware qubit allocation, deterministic and learned routing, and depth minimisation for NISQ quantum compilation. The correctness-first deterministic core, dependency-preserving scheduler, and guarded GNN--PPO research path are implemented as separate modules.
 
 ## Problem
 
@@ -19,6 +19,9 @@ Qiskit circuit -> interaction graph -> weighted initial mapper -> strict local s
                                           depth-aware list scheduling (separate)
                                                            |
                                                 JSON/CSV experiment results
+
+weighted initial mapping -> guarded Gymnasium router -> masked GNN actor-critic
+                                                   -> PPO / no-GNN / untrained controls
 ```
 
 ## Installation and quick start
@@ -27,11 +30,13 @@ Requires Python 3.11 or newer.
 
 ```bash
 python -m pip install -r requirements.txt
-python -m pip install -e ".[test]"
+python -m pip install -e ".[test,learning]"
 pytest -q
 python scripts/run_smoke.py
 python scripts/run_baselines.py
 python scripts/run_scheduler_check.py
+python scripts/build_benchmark_manifest.py
+python scripts/run_learned_benchmark.py
 ```
 
 The scripts create timestamped JSON and CSV files in `results/` and never overwrite an existing result. No IBM Quantum credentials or hardware are required.
@@ -58,17 +63,17 @@ The CP-SAT implementation is an exact initial-mapping oracle for small instances
 
 ## Testing and reproducibility
 
-The pytest suite covers graph weights and decay, deterministic/injective mapping, strict local-search descent, shortest-path tie-breaking, global-phase preservation, unsupported-input failures, route replay and layout consistency, small unitary equivalence for QWeave and equal-width SABRE output, scheduling order/timing, SABRE smoke execution, and a known tiny mapping-oracle optimum. Randomness is explicit and seeded. Results include configuration, seed, timestamp, metrics, and validation status. Experimental superiority and novelty are not claimed before measured results exist.
+The pytest suite covers graph weights and decay, deterministic/injective mapping, strict local-search descent, shortest-path tie-breaking, global-phase preservation, unsupported-input failures, route replay and layout consistency, small unitary equivalence for QWeave and equal-width SABRE output, scheduling order/timing, the guarded Gymnasium contract, action masking, GNN--PPO checkpointing/training, benchmark split integrity, SABRE smoke execution, and a known tiny mapping-oracle optimum. Randomness is explicit and seeded. Results include configuration, seed, timestamp, metrics, and validation status. Experimental superiority and novelty are not claimed before measured results exist.
 
 `scripts/run_scheduler_check.py` writes a new immutable JSON record for three four-qubit smoke circuits on a four-site line. It reports Basic, weighted, and SABRE routed versus scheduled depth on each *fixed* compiled circuit. CP-SAT contributes only its small initial-mapping objective/status. This check is not a frozen benchmark or evidence of general improvement.
 
-For the next comparative study, see [the experiment protocol](docs/EXPERIMENT_PROTOCOL.md), [validation scope](docs/VALIDATION_SCOPE.md), and [local baseline audit](docs/BASELINE_AUDIT.md). The internal [manuscript draft](paper/manuscript.tex) describes the deterministic method and planned evaluation; its main results are pending.
+For the comparative study, see [the experiment protocol](docs/EXPERIMENT_PROTOCOL.md), [learned-routing scope](docs/LEARNED_ROUTING.md), [validation scope](docs/VALIDATION_SCOPE.md), and [local baseline audit](docs/BASELINE_AUDIT.md). The internal [manuscript draft](paper/manuscript.tex) is updated only from reviewed raw records.
 
 The earlier [research blueprint](docs/blueprint/README.md) is archived with its PDF and editable sources. It is planning material; the implemented status is described here and in the baseline audit.
 
-## Week-1 status and future integration
+## Current implementation status
 
-Implemented: weighted interaction graph, initial mapping, local search, deterministic fallback routing, Basic and SABRE baselines, route-replay and legality checks, small unitary-layout checks, depth-aware list scheduling, metrics, CP-SAT mapping oracle, tests, and reproducible smoke comparisons. Deferred: PPO, GNNs, Gymnasium environments, neural routing, learned policies, and full exact routing formulations.
+Implemented: weighted interaction graph, initial mapping, local search, deterministic fallback routing, Basic and SABRE baselines, route-replay and legality checks, small unitary-layout checks, depth-aware list scheduling, metrics, CP-SAT mapping oracle, a guarded Gymnasium routing environment, masked graph actor-critic, PPO training, ablation controls, and a frozen learned-routing benchmark harness. A full exact-routing formulation remains outside the current scope; the CP-SAT component remains an initial-mapping oracle only.
 
 Team roles are documented in `AGENTS.md`: Atharva Sheersh Pandey owns integration and Qiskit adapters; Shrivardhini N owns formal model and scheduler; Diptesh Das owns deterministic optimisation, routing, baselines, and oracle; Haridasu Sreedhar owns RL/GNN/PPO work.
 

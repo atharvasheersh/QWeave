@@ -1,4 +1,4 @@
-# QWeave experiment protocol (version 0.1, draft)
+# QWeave experiment protocol (version 1.0)
 
 The September 8 smoke records are sanity checks on three four-qubit CX-only
 circuits and one line topology. They are not the benchmark dataset or evidence
@@ -10,8 +10,8 @@ credible dataset before any learned routing or comparative scheduling claim.
 RQ1: How does weighted initial mapping plus strict pairwise refinement and the
 deterministic router compare with identity-plus-router and Qiskit SABRE on
 legal circuits? RQ2: What changes when the implemented scheduler is applied
-to each fixed legal routed circuit? RQ3
-(future): What changes when a learned policy is added, including validity and
+to each fixed legal routed circuit? RQ3: What changes when the guarded
+GNN--PPO policy is added, including validity, fallback use, and
 inference/training cost? Do not combine RQ2/RQ3 results with RQ1 in a single
 unqualified claim.
 
@@ -47,15 +47,19 @@ SHA-256, generator version, seed, and explicit graph edges. Use
 manifest. The pilot is for harness development and adversarial checks; it
 is not the frozen comparative dataset.
 
-The final dataset should add more structured CX/Clifford patterns and small
-named algorithm circuits after their gate decomposition is fixed. Freeze
-instance counts, gate set, and depths separately, and expand only after the
-semantic acceptance gate in
-`VALIDATION_SCOPE.md` passes. Use connected path, ring, and small-grid graphs
-with explicit zero-based edge lists. Record graph size, edges, source circuit
-QASM or a stable serialized representation, source hash, family, generator
-version, and generation seed. Keep a held-out family/topology split for any
-later learned policy; never tune on the final test split.
+Benchmark v1 freezes 30 synthetic unitary cases at four and six qubits across
+five circuit families and path, ring, and two-row-grid hardware. Training uses
+GHZ, layered-CX, and seeded-interaction families on path/ring (12 cases).
+Validation contains those families on grid plus the held-out star and
+distant-pair families on path/ring (14 cases). The untouched test split combines
+the two held-out families with the grid topology (4 cases). Thus the final test
+combines a family and topology absent from training. Source QASM2, SHA-256,
+explicit zero-based edge lists, generation seed, and split are emitted by
+`benchmark_dataset.py`. Test cases cannot be selected through the training API.
+
+The v1 suite is intentionally small and synthetic. Named algorithm circuits and
+hardware-calibrated studies require a later protocol version; they must not be
+silently appended to v1 after results are observed.
 
 Before running a comparative study, check that all methods accept the same
 gate family and coupling interpretation. Qiskit's directed coupling/basis
