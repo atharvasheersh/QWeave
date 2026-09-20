@@ -175,11 +175,13 @@ class QubitRoutingEnv(gym.Env):
         if item is None:
             raise RuntimeError("cannot execute after termination")
         physical = [self.current[logical] for logical in item.qubits]
-        self.output.append(item.operation, physical, [])
+        self.output.append(item.operation, physical,
+                           [self.output.clbits[index] for index in item.clbits])
         self.trace.append({"kind": "source_gate", "operation": item.operation.name,
                            "source_index": item.source_index,
                            "logical_qubits": list(item.qubits),
-                           "physical_qubits": physical})
+                           "physical_qubits": physical,
+                           "classical_bits": list(item.clbits)})
         self.pointer += 1
 
     def _swap(self, left: int, right: int) -> None:

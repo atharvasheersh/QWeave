@@ -48,13 +48,13 @@ def route_with_fallback(circuit: QuantumCircuit, coupling_graph: nx.Graph, mappi
                     swaps += 1
                     trace.append({"kind": "inserted_swap", "operation": "swap", "edge": [left, right], "mapping": dict(current)})
             physical = [current[first], current[second]]
-            output.append(operation, physical, [])
+            output.append(operation, physical, [output.clbits[index] for index in item.clbits])
         else:
             physical = [current[logical] for logical in logicals]
-            output.append(operation, physical, [])
+            output.append(operation, physical, [output.clbits[index] for index in item.clbits])
         trace.append({"kind": "source_gate", "operation": operation.name,
                       "source_index": item.source_index, "logical_qubits": list(logicals),
-                      "physical_qubits": physical})
+                      "physical_qubits": physical, "classical_bits": list(item.clbits)})
     result = RoutingResult(output, current, trace, swaps)
     validate_routing_result(circuit, result, mapping, coupling_graph)
     return result

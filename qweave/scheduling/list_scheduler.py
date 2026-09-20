@@ -74,7 +74,8 @@ def schedule_routed_circuit(circuit: QuantumCircuit, coupling_graph: nx.Graph,
     output = physical_output_circuit(circuit, circuit.num_qubits)
     for index in order:
         item = operations[index]
-        output.append(item.operation, list(item.qubits), [])
+        output.append(item.operation, list(item.qubits),
+                      [output.clbits[clbit] for clbit in item.clbits])
     validate_two_qubit_legality(output, coupling_graph)
     # Positive durations guarantee that shared-wire predecessors start first.
     if any(start_times[previous] >= start_times[index]

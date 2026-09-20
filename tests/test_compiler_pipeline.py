@@ -35,3 +35,15 @@ def test_integrated_path_rejects_unknown_method_and_unapplied_durations() -> Non
         compile_deterministic(source, graph, method="oracle")
     with pytest.raises(ValueError, match="schedule=True"):
         compile_deterministic(source, graph, gate_durations={"cx": 2})
+
+
+def test_compile_accepts_reset_and_terminal_measurement_with_symbolic_replay() -> None:
+    source = QuantumCircuit(3, 1)
+    source.h(0)
+    source.cx(0, 2)
+    source.reset(1)
+    source.measure(2, 0)
+    compiled = compile_deterministic(source, nx.path_graph(3), method="weighted")
+    assert compiled.stage_metrics["symbolic_route_replay"] is True
+    assert compiled.semantic_validation is None
+    assert compiled.circuit.num_clbits == 1

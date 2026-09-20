@@ -3,6 +3,7 @@
 import networkx as nx
 
 from .qiskit_adapter import (
+    clbit_index,
     qubit_index,
     source_operations,
     unpack_instruction,
@@ -80,8 +81,7 @@ def validate_routing_result(source: object, result: RoutingResult,
     for event, instruction in zip(result.trace, result.circuit.data):
         operation, qargs, cargs = unpack_instruction(instruction)
         physical = tuple(qubit_index(result.circuit, bit) for bit in qargs)
-        if cargs:
-            raise ValueError("routed output contains unsupported classical operands")
+        classical = tuple(clbit_index(result.circuit, bit) for bit in cargs)
         if event.get("kind") == "inserted_swap":
             if operation.name != "swap" or len(physical) != 2 or not coupling_graph.has_edge(*physical):
                 raise ValueError("routing trace has an invalid inserted SWAP")
@@ -103,6 +103,8 @@ def validate_routing_result(source: object, result: RoutingResult,
             if (event.get("source_index") != source_gate.source_index
                     or event.get("logical_qubits") != list(source_gate.qubits)
                     or event.get("physical_qubits") != list(physical)
+                    or event.get("classical_bits", []) != list(source_gate.clbits)
+                    or classical != source_gate.clbits
                     or physical != expected or operation.name != source_gate.operation.name
                     or repr(operation.params) != repr(source_gate.operation.params)):
                 raise ValueError(f"routed source gate {gate_index} disagrees with circuit or layout")
@@ -114,6 +116,55 @@ def validate_routing_result(source: object, result: RoutingResult,
     if result.final_mapping != current or result.swap_count != inserted_swaps:
         raise ValueError("routed final layout or inserted SWAP count is inconsistent")
     validate_two_qubit_legality(result.circuit, coupling_graph)
+    return True
+
+
+def validate_statevector_probes(source: object, result: RoutingResult,
+                                initial_mapping: Mapping, *, probes: int = 4,
+                                seed: int = 20260921,
+                                max_physical_qubits: int = 12) -> bool | None:
+    """Probe unitary equivalence across layouts, including idle physical sites.
+
+    Deterministic random logical states are embedded at the initial physical
+    layout, evolved through the routed circuit, and compared with the source
+    state embedded at the final layout. This is a reproducible probabilistic
+    oracle; route replay remains the primary symbolic correctness check.
+    """
+
+    import numpy as np
+    from qiskit.quantum_info import Statevector
+
+    operations = source_operations(source)
+    if any(item.operation.name in {"measure", "reset"} for item in operations):
+        return None
+    physical = result.circuit.num_qubits
+    logical = source.num_qubits
+    if physical > max_physical_qubits:
+        return None
+    if type(probes) is not int or probes < 1:
+        raise ValueError("statevector probe count must be a positive integer")
+
+    def embed(vector: np.ndarray, mapping: Mapping) -> np.ndarray:
+        output = np.zeros(1 << physical, dtype=complex)
+        for logical_basis, amplitude in enumerate(vector):
+            physical_basis = 0
+            for logical_qubit in range(logical):
+                if logical_basis & (1 << logical_qubit):
+                    physical_basis |= 1 << mapping[logical_qubit]
+            output[physical_basis] = amplitude
+        return output
+
+    rng = np.random.default_rng(seed)
+    vectors = [np.eye(1 << logical, dtype=complex)[0]]
+    for _ in range(probes - 1):
+        vector = rng.normal(size=1 << logical) + 1j * rng.normal(size=1 << logical)
+        vectors.append(vector / np.linalg.norm(vector))
+    for vector in vectors:
+        actual = Statevector(embed(vector, initial_mapping)).evolve(result.circuit)
+        expected_logical = Statevector(vector).evolve(source).data
+        expected = Statevector(embed(expected_logical, result.final_mapping))
+        if not actual.equiv(expected, rtol=1e-9, atol=1e-9):
+            raise ValueError("routed statevector probes disagree with initial/final layouts")
     return True
 
 
@@ -187,3 +238,29 @@ def validate_transpiled_small_unitary(source: object, compiled: object,
         raise ValueError("Qiskit transpiler layout is not an equal-width permutation")
     result = RoutingResult(compiled, dict(enumerate(final)), [], 0)
     return validate_small_unitary_equivalence(source, result, dict(enumerate(initial)), max_qubits)
+
+
+def validate_transpiled_statevector_probes(source: object, compiled: object,
+                                           layout_circuit: object | None = None,
+                                           *, probes: int = 4,
+                                           seed: int = 20260921,
+                                           max_physical_qubits: int = 12) -> bool | None:
+    """Apply the layout-aware statevector oracle to Qiskit output."""
+
+    layout = getattr(layout_circuit or compiled, "layout", None)
+    if layout is None:
+        raise ValueError("Qiskit output has no transpiler layout for semantic validation")
+    try:
+        initial_values = layout.initial_index_layout(filter_ancillas=True)
+        final_values = layout.final_index_layout(filter_ancillas=True)
+    except Exception as exc:
+        raise ValueError("Qiskit transpiler layout cannot be interpreted") from exc
+    count = source.num_qubits
+    if len(initial_values) != count or len(final_values) != count:
+        raise ValueError("Qiskit transpiler layout does not cover every logical qubit")
+    initial = dict(enumerate(int(value) for value in initial_values))
+    final = dict(enumerate(int(value) for value in final_values))
+    result = RoutingResult(compiled, final, [], 0)
+    return validate_statevector_probes(source, result, initial, probes=probes,
+                                       seed=seed,
+                                       max_physical_qubits=max_physical_qubits)

@@ -13,7 +13,7 @@ from qweave.scheduling import ScheduleResult, schedule_routing_result
 
 from .qiskit_adapter import source_operations, validate_hardware_graph
 from .types import Mapping, RoutingResult
-from .validation import validate_small_unitary_equivalence
+from .validation import validate_small_unitary_equivalence, validate_statevector_probes
 
 
 @dataclass
@@ -43,7 +43,7 @@ def compile_deterministic(circuit: QuantumCircuit, coupling_graph: nx.Graph,
         raise ValueError("deterministic method must be 'basic' or 'weighted'")
     if gate_durations is not None and not schedule:
         raise ValueError("gate durations require schedule=True")
-    source_operations(circuit)
+    operations = source_operations(circuit)
     validate_hardware_graph(coupling_graph, circuit.num_qubits)
     if method == "basic":
         mapping = identity_mapping(circuit, coupling_graph)
@@ -51,12 +51,16 @@ def compile_deterministic(circuit: QuantumCircuit, coupling_graph: nx.Graph,
         seed = initial_mapping(circuit, coupling_graph)
         mapping = refine_mapping(circuit, seed.mapping, coupling_graph).mapping
     routed = route_with_fallback(circuit, coupling_graph, mapping)
-    semantic = validate_small_unitary_equivalence(circuit, routed, mapping)
+    semantic = None
+    if all(item.operation.name not in {"measure", "reset"} for item in operations):
+        semantic = validate_small_unitary_equivalence(circuit, routed, mapping)
+        if semantic is None:
+            semantic = validate_statevector_probes(circuit, routed, mapping)
     scheduled = (schedule_routing_result(circuit, routed, mapping, coupling_graph, gate_durations)
                  if schedule else None)
     metrics = {"source_depth": circuit.depth(), "routed_depth": routed.circuit.depth(),
                "inserted_routing_swaps": routed.swap_count,
-               "semantic_validation": semantic,
+               "symbolic_route_replay": True, "semantic_validation": semantic,
                "scheduled_depth": scheduled.depth_after if scheduled else None,
                "schedule_depth_delta": scheduled.depth_delta if scheduled else None,
                "scheduled_makespan": scheduled.makespan if scheduled else None}
