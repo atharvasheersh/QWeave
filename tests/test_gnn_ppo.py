@@ -52,6 +52,7 @@ def test_short_ppo_run_and_greedy_evaluation_are_valid() -> None:
     records = evaluate_policy(model, factories, seeds=[11, 13])
     assert metrics["steps"] == 24
     assert metrics["losses"] and np.isfinite(metrics["losses"]).all()
+    assert metrics["training_curve"][-1]["steps"] == 24
     assert len(records) == 4
     assert all(record["terminated"] or record["truncated"] for record in records)
     assert all(record["inserted_swaps"] >= 0 for record in records)

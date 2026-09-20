@@ -76,6 +76,11 @@ aggregate depth and SWAP medians, so the run does not isolate a learning
 benefit. See the [reviewed report](results/BENCHMARK_V1_REPORT.md) and
 [machine-readable summary](results/benchmark_v1_summary.json).
 
+The pushed baseline was independently reproduced from a clean clone; see the
+[reproduction audit](docs/REPRODUCTION_AUDIT_2026-09-21.md). Benchmark v2 is
+frozen before evaluation in the [v2 protocol](docs/BENCHMARK_V2_PROTOCOL.md)
+and [immutable manifest](benchmarks/benchmark_v2_manifest.json).
+
 The earlier [research blueprint](docs/blueprint/README.md) is archived with its PDF and editable sources. It is planning material; the implemented status is described here and in the baseline audit.
 
 ## Current implementation status

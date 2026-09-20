@@ -171,6 +171,7 @@ def train_ppo(env_factories: Sequence[Callable[[], QubitRoutingEnv]],
     episode_returns: list[float] = []
     fallback_counts: list[int] = []
     losses: list[float] = []
+    training_curve: list[dict] = []
     consumed = 0
     while consumed < config.total_steps:
         transitions: list[Transition] = []
@@ -199,6 +200,7 @@ def train_ppo(env_factories: Sequence[Callable[[], QubitRoutingEnv]],
                 observation, _ = env.reset(seed=config.seed + consumed + env_index)
         advantages, returns = _advantages(transitions, config)
         indices = np.arange(len(transitions))
+        loss_start = len(losses)
         for _ in range(config.update_epochs):
             rng.shuffle(indices)
             for start in range(0, len(indices), config.minibatch_size):
@@ -224,9 +226,20 @@ def train_ppo(env_factories: Sequence[Callable[[], QubitRoutingEnv]],
                 nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
                 optimizer.step()
                 losses.append(float(loss.detach().item()))
+        recent_losses = losses[loss_start:]
+        training_curve.append({
+            "steps": consumed,
+            "episodes": len(episode_returns),
+            "mean_recent_loss": (float(np.mean(recent_losses))
+                                 if recent_losses else None),
+            "mean_recent_return": (float(np.mean(episode_returns[-10:]))
+                                   if episode_returns else None),
+            "fallback_total": int(sum(fallback_counts)),
+        })
     metrics = {"config": asdict(config), "steps": consumed,
                "episodes": len(episode_returns), "episode_returns": episode_returns,
-               "fallback_counts": fallback_counts, "losses": losses}
+               "fallback_counts": fallback_counts, "losses": losses,
+               "training_curve": training_curve}
     return model, metrics
 
 
