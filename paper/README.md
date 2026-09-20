@@ -1,18 +1,19 @@
 # Manuscript status
 
-`manuscript.tex` is an A4, two-column, Times-style internal first draft.
-The problem, related work, implemented deterministic method, correctness
-scope, and planned evaluation are written. Team author order and venue
-format remain to be agreed. The manuscript deliberately reports no main
-benchmark findings or PPO/GNN contribution, because those experiments and
-modules are not present. Bibliography entries were checked against the
-linked primary papers and IBM Quantum documentation on 2026-09-16.
+`manuscript.tex` is the editable A4, two-column, Times-style source. It now
+documents the deterministic path, fixed-route scheduler, guarded Gymnasium
+environment, GNN--PPO trainer, frozen benchmark v1 split, ablations, and the
+measured limitations. The generated Word and PDF copies are kept separately
+under `docx/` and `pdf/`. Team author order and venue format remain to be
+agreed. Bibliography entries were checked against the linked primary papers
+and IBM Quantum documentation on 2026-09-16.
 
-Build when a TeX distribution is available from this folder with
+Build the TeX source when a TeX distribution is available from this folder with
 `pdflatex manuscript.tex`, `bibtex manuscript`, and two further `pdflatex`
-passes. No TeX engine was available in the local environment at drafting
-time, so the source has not been compiled or visually inspected as a PDF.
+passes. The repository PDF is exported from the matching Word artifact because
+no TeX engine was available in the local environment; both generated artifacts
+are visually inspected after each meaningful update.
 
-Before external submission, freeze the protocol and dataset, add validated
-results and limitations, review citations against full texts, agree author
-order and contributions, and render-inspect every final page.
+Before external submission, agree author order and contributions, select the
+venue template, review citations against full texts, and run a larger
+preregistered benchmark with stronger training and independent reruns.
