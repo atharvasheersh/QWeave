@@ -32,7 +32,8 @@ class DeterministicCompileResult:
 
 def compile_deterministic(circuit: QuantumCircuit, coupling_graph: nx.Graph,
                           method: str = "weighted", schedule: bool = False,
-                          gate_durations: dict[str, float] | None = None) -> DeterministicCompileResult:
+                          gate_durations: dict[str, float] | None = None,
+                          numerical_validation: bool = True) -> DeterministicCompileResult:
     """Compile Basic or weighted mapping through the same validated router.
 
     SABRE and CP-SAT remain separate reference methods. CP-SAT optimizes only
@@ -43,6 +44,8 @@ def compile_deterministic(circuit: QuantumCircuit, coupling_graph: nx.Graph,
         raise ValueError("deterministic method must be 'basic' or 'weighted'")
     if gate_durations is not None and not schedule:
         raise ValueError("gate durations require schedule=True")
+    if type(numerical_validation) is not bool:
+        raise TypeError("numerical_validation must be a boolean")
     operations = source_operations(circuit)
     validate_hardware_graph(coupling_graph, circuit.num_qubits)
     if method == "basic":
@@ -52,7 +55,8 @@ def compile_deterministic(circuit: QuantumCircuit, coupling_graph: nx.Graph,
         mapping = refine_mapping(circuit, seed.mapping, coupling_graph).mapping
     routed = route_with_fallback(circuit, coupling_graph, mapping)
     semantic = None
-    if all(item.operation.name not in {"measure", "reset"} for item in operations):
+    if (numerical_validation
+            and all(item.operation.name not in {"measure", "reset"} for item in operations)):
         semantic = validate_small_unitary_equivalence(circuit, routed, mapping)
         if semantic is None:
             semantic = validate_statevector_probes(circuit, routed, mapping)
@@ -60,7 +64,9 @@ def compile_deterministic(circuit: QuantumCircuit, coupling_graph: nx.Graph,
                  if schedule else None)
     metrics = {"source_depth": circuit.depth(), "routed_depth": routed.circuit.depth(),
                "inserted_routing_swaps": routed.swap_count,
-               "symbolic_route_replay": True, "semantic_validation": semantic,
+               "symbolic_route_replay": True,
+               "numerical_validation_requested": numerical_validation,
+               "semantic_validation": semantic,
                "scheduled_depth": scheduled.depth_after if scheduled else None,
                "schedule_depth_delta": scheduled.depth_delta if scheduled else None,
                "scheduled_makespan": scheduled.makespan if scheduled else None}

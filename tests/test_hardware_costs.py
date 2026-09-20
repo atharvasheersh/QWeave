@@ -42,7 +42,8 @@ def test_declared_durations_and_edge_errors_produce_separate_costs() -> None:
     )
     metrics = estimate_hardware_cost(circuit, graph, profile)
     assert metrics["scheduled_makespan_ns"] == 210.0
-    assert metrics["calibrated"] is True
+    assert metrics["calibrated"] is False
+    assert metrics["edge_specific"] is True
     assert metrics["error_events"] == 3
     assert metrics["estimated_success_probability"] == pytest.approx(
         (1 - profile.one_qubit_error) * 0.98 * 0.97)

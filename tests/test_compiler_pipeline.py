@@ -47,3 +47,13 @@ def test_compile_accepts_reset_and_terminal_measurement_with_symbolic_replay() -
     assert compiled.stage_metrics["symbolic_route_replay"] is True
     assert compiled.semantic_validation is None
     assert compiled.circuit.num_clbits == 1
+
+
+def test_compile_can_skip_only_the_expensive_numerical_oracle() -> None:
+    source = QuantumCircuit(3)
+    source.cx(0, 2)
+    compiled = compile_deterministic(source, nx.path_graph(4),
+                                     numerical_validation=False)
+    assert compiled.stage_metrics["symbolic_route_replay"] is True
+    assert compiled.stage_metrics["numerical_validation_requested"] is False
+    assert compiled.semantic_validation is None

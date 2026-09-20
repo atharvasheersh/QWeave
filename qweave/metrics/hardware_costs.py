@@ -11,8 +11,8 @@ from qweave.scheduling import schedule_routed_circuit
 
 
 DEFAULT_DURATIONS_NS = {
-    "h": 35.0, "x": 35.0, "y": 35.0, "z": 0.0,
-    "rx": 35.0, "ry": 35.0, "rz": 0.0, "p": 0.0,
+    "h": 35.0, "x": 35.0, "y": 35.0, "z": 1.0,
+    "rx": 35.0, "ry": 35.0, "rz": 1.0, "p": 1.0,
     "cx": 300.0, "cz": 260.0, "cp": 300.0, "rzz": 300.0,
     "swap": 900.0, "reset": 1000.0, "measure": 1200.0,
 }
@@ -24,6 +24,7 @@ class HardwareCostProfile:
     """Explicit synthetic or calibration-derived hardware assumptions."""
 
     name: str = "declared_superconducting_proxy_v1"
+    calibrated: bool = False
     durations_ns: dict[str, float] = field(default_factory=lambda: dict(DEFAULT_DURATIONS_NS))
     one_qubit_error: float = 0.001
     two_qubit_error: float = 0.01
@@ -111,7 +112,8 @@ def estimate_hardware_cost(circuit: QuantumCircuit, coupling_graph: nx.Graph,
             error_events += 1
     return {
         "profile": profile.name,
-        "calibrated": bool(profile.directed_edge_errors),
+        "calibrated": profile.calibrated,
+        "edge_specific": bool(profile.directed_edge_errors),
         "scheduled_makespan_ns": schedule.makespan,
         "scheduled_depth": schedule.depth_after,
         "schedule_depth_delta": schedule.depth_delta,

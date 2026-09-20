@@ -13,7 +13,8 @@ from qweave.core.validation import (
 from qweave.metrics.circuit_metrics import circuit_metrics
 
 
-def run_sabre_baseline(circuit: object, coupling_graph: object, seed: int = 7) -> dict:
+def run_sabre_baseline(circuit: object, coupling_graph: object, seed: int = 7,
+                       numerical_validation: bool = True) -> dict:
     """Run Qiskit SABRE with a fixed seed and return reproducible metrics."""
 
     operations = source_operations(circuit)
@@ -22,6 +23,8 @@ def run_sabre_baseline(circuit: object, coupling_graph: object, seed: int = 7) -
         raise ValueError("SABRE adapter requires contiguous physical labels 0..p-1")
     if type(seed) is not int or seed < 0:
         raise ValueError("SABRE seed must be a non-negative integer")
+    if type(numerical_validation) is not bool:
+        raise TypeError("numerical_validation must be a boolean")
     # The deterministic core uses undirected edges. Give Qiskit both CX
     # directions so this reference has the same coupling interpretation.
     edges = sorted({edge for left, right in coupling_graph.edges
@@ -44,11 +47,13 @@ def run_sabre_baseline(circuit: object, coupling_graph: object, seed: int = 7) -
     runtime = time.perf_counter() - started
     validate_two_qubit_legality(compiled, coupling_graph)
     semantic_validation = None
-    if all(item.operation.name not in {"measure", "reset"} for item in operations):
+    if (numerical_validation
+            and all(item.operation.name not in {"measure", "reset"} for item in operations)):
         semantic_validation = validate_transpiled_small_unitary(circuit, compiled)
         if semantic_validation is None:
             semantic_validation = validate_transpiled_statevector_probes(circuit, compiled)
     result = circuit_metrics(compiled, circuit, runtime)
     result.update({"circuit": compiled, "seed": seed, "method": "qiskit_sabre",
-                   "semantic_validation": semantic_validation})
+                   "semantic_validation": semantic_validation,
+                   "numerical_validation_requested": numerical_validation})
     return result
