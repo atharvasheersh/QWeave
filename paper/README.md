@@ -8,8 +8,10 @@ PPO training improves on the untrained policy, while the tested message passing
 and learned paths do not improve paired median outcomes over the deterministic
 references. The generated Word and PDF copies are kept separately under
 `docx/` and `pdf/`. Team author order and venue format remain to be agreed.
-Bibliography entries were checked against the linked primary papers and IBM
-Quantum documentation on 2026-09-16.
+Bibliography entries and their supporting claims were checked against the
+linked primary records and IBM Quantum documentation on 2026-09-21. See the
+[academic audit](../docs/ACADEMIC_AUDIT_2026-09-21.md) and the
+[submission checklist](SUBMISSION_CHECKLIST.md).
 
 Build the TeX source when a TeX distribution is available from this folder with
 `pdflatex manuscript.tex`, `bibtex manuscript`, and two further `pdflatex`

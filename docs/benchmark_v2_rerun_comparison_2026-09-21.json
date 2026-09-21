@@ -1,0 +1,17 @@
+{
+  "reference_schema": "2.1",
+  "candidate_schema": "2.0",
+  "benchmark_version_match": true,
+  "manifest_sha256_match": true,
+  "selected_candidate_match": true,
+  "selection_match": true,
+  "reference_records": 792,
+  "candidate_records": 792,
+  "candidate_statuses": {
+    "ok": 792
+  },
+  "non_runtime_record_mismatch_count": 0,
+  "non_runtime_record_mismatches": [],
+  "training_mismatch_count": 0,
+  "training_mismatches": []
+}

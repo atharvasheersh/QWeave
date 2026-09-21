@@ -20,6 +20,7 @@ def test_subset_study_selects_on_validation_and_writes_checkpoints(tmp_path) -> 
                        bootstrap_resamples=200,
                        validation_case_ids={validation}, test_case_ids={test})
     payload = json.loads(raw.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == "2.1"
     assert payload["scope"] == "explicit subset harness verification"
     assert {item["candidate"] for item in payload["selection"]} == {
         "standard", "conservative", "aggressive"}

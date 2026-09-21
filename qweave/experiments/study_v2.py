@@ -47,7 +47,7 @@ from .benchmark_v2_dataset import (
 from .statistics import analyze_records
 
 
-SCHEMA_VERSION = "2.0"
+SCHEMA_VERSION = "2.1"
 POLICY_SEEDS = (7, 17, 29, 41, 53)
 SABRE_SEEDS = (7, 17, 29, 41, 53)
 SELECTION_SEED = 101

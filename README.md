@@ -99,6 +99,13 @@ learned-routing advantage over the deterministic references. See the
 
 The earlier [research blueprint](docs/blueprint/README.md) is archived with its PDF and editable sources. It is planning material; the implemented status is described here and in the baseline audit.
 
+The [benchmark-v2 academic audit](docs/ACADEMIC_AUDIT_2026-09-21.md) records
+the primary-source citation check, successful GitHub Actions run, locked clean
+clone, 69-test result, artifact hashes, and exact full-study reproduction. The
+machine-readable rerun comparison reports zero non-runtime record mismatches
+and zero training-summary mismatches. See the [v0.2.0 release
+notes](RELEASE_NOTES_v0.2.0.md) for the packaged scope and claim boundary.
+
 ## Current implementation status
 
 Implemented: weighted interaction graph, initial mapping, local search, deterministic fallback routing, Basic and SABRE baselines, route replay, exact and probe-based semantic checks, reset and terminal-measurement preservation, directed-coupler lowering, depth-aware list scheduling, declared duration/error proxies, metrics, a CP-SAT mapping oracle, a guarded Gymnasium routing environment, masked graph actor-critic, PPO training, ablation controls, a frozen benchmark-v2 harness, checkpoints, and paired bootstrap analysis. Dynamic classical control and a full exact-routing formulation remain outside the current scope; the CP-SAT component remains an initial-mapping oracle only.
