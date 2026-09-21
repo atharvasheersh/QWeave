@@ -33,6 +33,7 @@ from qweave.metrics.circuit_metrics import circuit_metrics, timed
 from qweave.metrics.hardware_costs import (
     HardwareCostProfile,
     estimate_hardware_cost,
+    synthesize_directed_circuit,
     validate_coupling_legality,
 )
 from qweave.scheduling import schedule_routed_circuit, schedule_routing_result
@@ -120,9 +121,11 @@ def _common_record(case: dict, method: str, seed: int | None, source,
                    compiled, runtime: float, runtime_samples: list[float],
                    semantic: bool, symbolic: bool | None,
                    fallback_count: int) -> dict:
-    graph = load_v2_case(case)[1]
-    cost = estimate_hardware_cost(compiled, graph, _profile(case))
-    directed_legal, directed_error = _directed_legal(compiled, case)
+    directed_graph = directed_v2_graph(case)
+    pre_synthesis_legal, pre_synthesis_error = _directed_legal(compiled, case)
+    hardware_circuit = synthesize_directed_circuit(compiled, directed_graph)
+    cost = estimate_hardware_cost(hardware_circuit, directed_graph, _profile(case))
+    directed_legal, directed_error = _directed_legal(hardware_circuit, case)
     return {
         "case_id": case["case_id"], "family": case["family"],
         "instance": case["instance"], "topology": case["topology"],
@@ -138,6 +141,11 @@ def _common_record(case: dict, method: str, seed: int | None, source,
         "estimated_log_success": cost["estimated_log_success"],
         "hardware_profile": cost["profile"],
         "hardware_profile_calibrated": cost["calibrated"],
+        "pre_synthesis_directed_legal": pre_synthesis_legal,
+        "pre_synthesis_directed_error": pre_synthesis_error,
+        "directed_synthesis_depth": hardware_circuit.depth(),
+        "directed_synthesis_depth_delta": hardware_circuit.depth() - compiled.depth(),
+        "directed_synthesis_operation_delta": len(hardware_circuit.data) - len(compiled.data),
         "semantic_validation": semantic,
         "symbolic_validation": symbolic,
         "directed_legal": directed_legal,

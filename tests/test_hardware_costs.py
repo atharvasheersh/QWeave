@@ -7,6 +7,7 @@ from qiskit import QuantumCircuit
 from qweave.metrics.hardware_costs import (
     HardwareCostProfile,
     estimate_hardware_cost,
+    synthesize_directed_circuit,
     validate_coupling_legality,
 )
 
@@ -47,6 +48,28 @@ def test_declared_durations_and_edge_errors_produce_separate_costs() -> None:
     assert metrics["error_events"] == 3
     assert metrics["estimated_success_probability"] == pytest.approx(
         (1 - profile.one_qubit_error) * 0.98 * 0.97)
+
+
+def test_directed_synthesis_reverses_cx_and_lowers_swap() -> None:
+    from qiskit.quantum_info import Operator
+
+    graph = nx.DiGraph([(0, 1)])
+    source = QuantumCircuit(2)
+    source.cx(1, 0)
+    source.swap(0, 1)
+    lowered = synthesize_directed_circuit(source, graph)
+    assert validate_coupling_legality(lowered, graph)
+    assert all(item.operation.name != "swap" for item in lowered.data)
+    assert all(tuple(lowered.find_bit(bit).index for bit in item.qubits) == (0, 1)
+               for item in lowered.data if item.operation.name == "cx")
+    assert Operator(lowered).equiv(Operator(source))
+
+
+def test_directed_synthesis_rejects_unconnected_ordered_gate() -> None:
+    source = QuantumCircuit(3)
+    source.cx(0, 2)
+    with pytest.raises(ValueError, match="no directed coupler"):
+        synthesize_directed_circuit(source, nx.DiGraph([(0, 1)]))
 
 
 @pytest.mark.parametrize("kwargs", [

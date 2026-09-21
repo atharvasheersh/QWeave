@@ -6,7 +6,7 @@ import math
 import networkx as nx
 from qiskit import QuantumCircuit
 
-from qweave.core.qiskit_adapter import source_operations
+from qweave.core.qiskit_adapter import physical_output_circuit, source_operations
 from qweave.scheduling import schedule_routed_circuit
 
 
@@ -17,6 +17,54 @@ DEFAULT_DURATIONS_NS = {
     "swap": 900.0, "reset": 1000.0, "measure": 1200.0,
 }
 SYMMETRIC_TWO_QUBIT = frozenset({"cz", "cp", "rzz"})
+
+
+def synthesize_directed_circuit(circuit: QuantumCircuit,
+                                coupling_graph: nx.DiGraph) -> QuantumCircuit:
+    """Lower reverse CNOTs and SWAPs to the available directed coupler arcs."""
+
+    if not isinstance(coupling_graph, nx.DiGraph) or coupling_graph.is_multigraph():
+        raise TypeError("directed synthesis requires a simple NetworkX DiGraph")
+    output = physical_output_circuit(circuit, circuit.num_qubits)
+
+    def emit_cx(control: int, target: int) -> None:
+        if coupling_graph.has_edge(control, target):
+            output.cx(control, target)
+        elif coupling_graph.has_edge(target, control):
+            output.h(control)
+            output.h(target)
+            output.cx(target, control)
+            output.h(control)
+            output.h(target)
+        else:
+            raise ValueError(
+                f"no directed coupler connects physical qubits {(control, target)}")
+
+    for item in source_operations(circuit):
+        operation, qubits, clbits = item.operation, item.qubits, item.clbits
+        if len(qubits) != 2:
+            output.append(operation, list(qubits), list(clbits))
+            continue
+        left, right = qubits
+        if operation.name == "cx":
+            emit_cx(left, right)
+        elif operation.name == "swap":
+            emit_cx(left, right)
+            emit_cx(right, left)
+            emit_cx(left, right)
+        elif operation.name in SYMMETRIC_TWO_QUBIT:
+            if not (coupling_graph.has_edge(left, right)
+                    or coupling_graph.has_edge(right, left)):
+                raise ValueError(
+                    f"no directed coupler connects physical qubits {(left, right)}")
+            output.append(operation, [left, right], [])
+        else:
+            if not coupling_graph.has_edge(left, right):
+                raise ValueError(
+                    f"cannot reverse ordered gate {operation.name} on {(left, right)}")
+            output.append(operation, [left, right], [])
+    validate_coupling_legality(output, coupling_graph)
+    return output
 
 
 @dataclass(frozen=True)
