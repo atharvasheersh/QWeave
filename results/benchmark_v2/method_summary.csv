@@ -1,0 +1,7 @@
+method,cases,seed_runs,median_depth,median_swaps,median_runtime_seconds,semantic_pass_rate,directed_legality_rate,fallback_total
+basic,36,36,48.5,11.5,0.0021938499994575977,1.0,1.0,0
+weighted,36,36,36.0,0.0,0.0035810999979730695,1.0,1.0,0
+sabre,36,180,46.0,7.0,0.0027644500078167766,1.0,1.0,0
+gnn_ppo,36,180,37.5,0.0,0.3472718499833718,1.0,1.0,4543
+mlp_ppo,36,180,36.0,0.0,0.10404859998379834,1.0,1.0,742
+gnn_untrained,36,180,198.0,193.0,0.6681171999953222,1.0,1.0,8059

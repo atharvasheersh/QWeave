@@ -48,6 +48,24 @@ def test_unassessed_symbolic_validation_is_not_reported_as_failure() -> None:
     assert analysis["collapsed_records"][0]["symbolic_valid"] is None
 
 
+def test_ablation_pairs_are_collapsed_by_case() -> None:
+    records = []
+    for case, gnn, mlp, untrained in (("a", 5, 6, 20), ("b", 7, 7, 18)):
+        records.extend([
+            _record(case, "f", "gnn_ppo", 1, gnn, 1),
+            _record(case, "f", "gnn_ppo", 2, gnn + 2, 1),
+            _record(case, "f", "mlp_ppo", 1, mlp, 1),
+            _record(case, "f", "gnn_untrained", 1, untrained, 9),
+        ])
+    analysis = analyze_records(records, references=(), resamples=200, seed=3)
+    depth = next(row for row in analysis["ablation_differences"]
+                 if row["method"] == "gnn_ppo"
+                 and row["reference"] == "mlp_ppo"
+                 and row["metric"] == "depth")
+    assert depth["pairs"] == 2
+    assert depth["median"] == 0.5
+
+
 def test_bootstrap_is_deterministic_and_validated() -> None:
     first = bootstrap_median_interval([-2, -1, 0, 1], resamples=500, seed=7)
     assert first == bootstrap_median_interval([-2, -1, 0, 1], resamples=500, seed=7)

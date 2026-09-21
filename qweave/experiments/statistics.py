@@ -109,6 +109,24 @@ def analyze_records(records: list[dict], *, references=("weighted", "sabre"),
                                     "best": sorted(depth_rows, key=lambda row: (row["depth_delta"], row["case_id"]))[:5],
                                     "worst": sorted(depth_rows, key=lambda row: (-row["depth_delta"], row["case_id"]))[:5]})
 
+    ablation = []
+    for method, reference in (
+            ("gnn_ppo", "mlp_ppo"),
+            ("gnn_ppo", "gnn_untrained"),
+            ("mlp_ppo", "gnn_untrained")):
+        common = sorted(case_id for candidate, case_id in by_key
+                        if candidate == method and (reference, case_id) in by_key)
+        for metric in ("depth", "swap_count", "hardware_makespan_ns",
+                       "estimated_log_success"):
+            deltas = [by_key[(method, case_id)][metric]
+                      - by_key[(reference, case_id)][metric]
+                      for case_id in common]
+            if deltas:
+                ablation.append({"method": method, "reference": reference,
+                                 "metric": metric,
+                                 **bootstrap_median_interval(
+                                     deltas, resamples=resamples, seed=seed)})
+
     method_summary = []
     for method in methods:
         raw = [row for row in records if row["method"] == method]
@@ -134,5 +152,6 @@ def analyze_records(records: list[dict], *, references=("weighted", "sabre"),
         })
     return {"collapsed_records": collapsed, "method_summary": method_summary,
             "family_summary": family_summary, "paired_differences": paired,
+            "ablation_differences": ablation,
             "counterexamples": counterexamples,
             "bootstrap": {"resamples": resamples, "seed": seed}}
