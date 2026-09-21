@@ -65,9 +65,21 @@ and is not compared between the original and independent machines.
 Fixed-route scheduling is reported both with unit durations and with the
 declared `declared_superconducting_proxy_v1` profile. The profile uses explicit
 nanosecond durations and independent gate-error proxies. Its edge values are
-synthetic assumptions stored in the manifest, not device calibration. Directed
-legality is reported separately and is never silently converted into an
-undirected success.
+synthetic assumptions stored in the manifest, not device calibration.
+
+The routing algorithms first operate on the shared undirected adjacency graph.
+For hardware-cost evaluation, reverse CNOTs are then lowered by Hadamard
+conjugation around an available directed CNOT and SWAPs are decomposed into
+three direction-lowered CNOTs. Declared duration and error costs are accepted
+only after the lowered circuit passes ordered-arc legality. Pre-synthesis
+directed legality and synthesis overhead remain separate recorded fields.
+
+The first completed v2 run exposed that its cost fields had been computed on
+the undirected pre-synthesis circuit even though directed legality was recorded.
+The retained pre-correction raw record documents that audit. Schema 2.1 replays
+the saved policies and baselines, applies the frozen direction-lowering rule,
+and recomputes only direction-dependent schedule/error fields; routing depth,
+SWAP counts, runtimes, splits, policies, and semantic results are unchanged.
 
 ## Statistical analysis
 

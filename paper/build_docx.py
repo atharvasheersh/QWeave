@@ -15,6 +15,7 @@ from docx.shared import Cm, Pt, RGBColor
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "manuscript.tex"
 OUTPUT = ROOT / "docx" / "QWeave_Manuscript.docx"
+LEARNING_CURVE = ROOT.parent / "results" / "benchmark_v2" / "figures" / "learning_curves.png"
 
 CITATIONS = {
     "li2019sabre": 1, "pozzi2020rl": 2, "sinha2022gnn": 3,
@@ -60,10 +61,11 @@ def _clean(text: str) -> str:
     replacements = {
         r"Eq.~\eqref{eq:objective}": "Equation (1)",
         r"Table~\ref{tab:test-results}": "Table 1",
+        r"Figure~\ref{fig:learning-curves}": "Figure 1",
         r"\eqref{eq:equivalence}": "Equation (3)",
         r"\rightarrow": "->", r"\ldots": "...", r"\emph": "",
         r"\texttt": "", r"\textsc": "", r"\small": "",
-        r"\{": "{", r"\}": "}", r"~": " ",
+        r"\{": "{", r"\}": "}", r"\%": "%", r"\_": "-", r"~": " ",
     }
     text = re.sub(r"\\cite\{([^}]+)\}", citation, text)
     for old, new in replacements.items():
@@ -86,7 +88,12 @@ def _add_body_paragraph(document: Document, text: str) -> None:
 
 
 def _add_results_table(document: Document) -> None:
-    caption = document.add_paragraph("Table 1  Held-out test summary. Runtime is median wall time in seconds.")
+    wide = document.add_section(WD_SECTION.CONTINUOUS)
+    wide.page_width, wide.page_height = Cm(21), Cm(29.7)
+    wide.top_margin = wide.bottom_margin = Cm(1.7)
+    wide.left_margin = wide.right_margin = Cm(1.8)
+    _set_columns(wide, 1)
+    caption = document.add_paragraph("Table 1  Benchmark-v2 test summary. Runtime is median wall time in seconds.")
     caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
     caption.runs[0].bold = True
     table = document.add_table(rows=1, cols=5)
@@ -103,12 +110,12 @@ def _add_results_table(document: Document) -> None:
         shading.set(qn("w:fill"), "1F4E78")
         cell._tc.get_or_add_tcPr().append(shading)
     rows = (
-        ("Basic", "9.5", "3.0", "0.0085", "0.0"),
-        ("Weighted", "7.5", "1.5", "0.0083", "0.0"),
-        ("SABRE", "10.0", "2.5", "0.0052", "0.0"),
-        ("GNN-PPO", "7.5", "1.0", "0.0588", "0.0"),
-        ("No-GNN PPO", "7.5", "1.0", "0.0260", "0.0"),
-        ("Untrained GNN", "7.5", "1.0", "0.0594", "0.0"),
+        ("Basic", "48.5", "11.5", "0.0022", "0"),
+        ("Weighted", "36.0", "0.0", "0.0036", "0"),
+        ("SABRE", "46.0", "7.0", "0.0028", "0"),
+        ("GNN-PPO", "37.5", "0.0", "0.3473", "4543"),
+        ("No-message PPO", "36.0", "0.0", "0.1040", "742"),
+        ("Untrained GNN", "198.0", "193.0", "0.6681", "8059"),
     )
     for row_index, values in enumerate(rows):
         cells = table.add_row().cells
@@ -123,6 +130,34 @@ def _add_results_table(document: Document) -> None:
                 shading.set(qn("w:fill"), "DCE6F1")
                 cell._tc.get_or_add_tcPr().append(shading)
     document.add_paragraph()
+    columns = document.add_section(WD_SECTION.CONTINUOUS)
+    columns.page_width, columns.page_height = Cm(21), Cm(29.7)
+    columns.top_margin = columns.bottom_margin = Cm(1.7)
+    columns.left_margin = columns.right_margin = Cm(1.8)
+    _set_columns(columns, 2)
+
+
+def _add_learning_figure(document: Document) -> None:
+    if not LEARNING_CURVE.exists():
+        raise FileNotFoundError(f"missing benchmark figure: {LEARNING_CURVE}")
+    wide = document.add_section(WD_SECTION.CONTINUOUS)
+    wide.page_width, wide.page_height = Cm(21), Cm(29.7)
+    wide.top_margin = wide.bottom_margin = Cm(1.7)
+    wide.left_margin = wide.right_margin = Cm(1.8)
+    _set_columns(wide, 1)
+    paragraph = document.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.add_run().add_picture(str(LEARNING_CURVE), width=Cm(16.5))
+    caption = document.add_paragraph(
+        "Figure 1  Five-seed learning curves. Lines show the median recent "
+        "episode return and bands show the interquartile range.")
+    caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    caption.runs[0].italic = True
+    columns = document.add_section(WD_SECTION.CONTINUOUS)
+    columns.page_width, columns.page_height = Cm(21), Cm(29.7)
+    columns.top_margin = columns.bottom_margin = Cm(1.7)
+    columns.left_margin = columns.right_margin = Cm(1.8)
+    _set_columns(columns, 2)
 
 
 def build() -> Path:
@@ -133,6 +168,8 @@ def build() -> Path:
     abstract = re.search(r"\\begin\{abstract\}(.*?)\\end\{abstract\}", source, re.S).group(1)
     body = source.split(r"\end{abstract}", 1)[1].split(r"\bibliographystyle", 1)[0]
     body = re.sub(r"\\begin\{table\}.*?\\end\{table\}", "\n\n[[RESULTS_TABLE]]\n\n", body, flags=re.S)
+    body = re.sub(r"\\begin\{figure\*\}.*?\\end\{figure\*\}",
+                  "\n\n[[LEARNING_FIGURE]]\n\n", body, flags=re.S)
     equations = [
         "J(m) = sum over (i,j) in E_C of w_ij d_H(m(i),m(j)).   (1)",
         "r_i = d_i + max over successors j of r_j;   s_i = max over predecessors j of (s_j + d_j).   (2)",
@@ -156,8 +193,13 @@ def build() -> Path:
         styles[name].font.size = Pt(size)
         styles[name].font.color.rgb = RGBColor(0, 0, 0)
         styles[name]._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+    title_properties = styles["Title"]._element.get_or_add_pPr()
+    title_border = title_properties.find(qn("w:pBdr"))
+    if title_border is not None:
+        title_properties.remove(title_border)
 
     paragraph = document.add_paragraph()
+    paragraph.style = document.styles["Title"]
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title_run = paragraph.add_run(_clean(title))
     title_run.bold = True
@@ -180,7 +222,7 @@ def build() -> Path:
     columns.left_margin = columns.right_margin = Cm(1.8)
     _set_columns(columns, 2)
 
-    tokens = re.split(r"(\\section\{[^}]+\}|\[\[RESULTS_TABLE\]\]|\[\[EQUATION:.*?\]\])", body)
+    tokens = re.split(r"(\\section\{[^}]+\}|\[\[RESULTS_TABLE\]\]|\[\[LEARNING_FIGURE\]\]|\[\[EQUATION:.*?\]\])", body)
     for token in tokens:
         token = token.strip()
         if not token:
@@ -190,6 +232,8 @@ def build() -> Path:
             document.add_heading(_clean(section_match.group(1)), level=1)
         elif token == "[[RESULTS_TABLE]]":
             _add_results_table(document)
+        elif token == "[[LEARNING_FIGURE]]":
+            _add_learning_figure(document)
         elif token.startswith("[[EQUATION:"):
             equation = token[len("[[EQUATION:"):-2]
             paragraph = document.add_paragraph(equation)

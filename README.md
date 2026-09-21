@@ -37,6 +37,7 @@ python scripts/run_baselines.py
 python scripts/run_scheduler_check.py
 python scripts/build_benchmark_manifest.py
 python scripts/run_learned_benchmark.py
+python scripts/run_study_v2.py
 ```
 
 The scripts create timestamped JSON and CSV files in `results/` and never overwrite an existing result. No IBM Quantum credentials or hardware are required.
@@ -45,9 +46,11 @@ The scripts create timestamped JSON and CSV files in `results/` and never overwr
 
 `build_interaction_graph` counts two-qubit interactions, optionally using `decay ** gate_index`. The weighted mapper seeds the highest interaction-degree logical qubit on a high-centrality hardware node, then greedily minimises weighted distance to assigned neighbours. Ties are deterministic. Local search evaluates all pairwise exchanges and accepts only strict objective decreases, so it terminates after finite descent or the configured iteration limit.
 
-The fallback router processes operations in order, advances one logical qubit along a deterministic shortest path with hardware-edge SWAPs, and updates the layout after every inserted SWAP. It preserves source global phase and returns a trace with one event per emitted operation; validation replays that trace against the source gates and final layout before edge-legality checks. The Qiskit adapter accepts only unconditioned one- and two-qubit gates without classical bits. It rejects measurements, resets, barriers, three-plus-qubit gates, dynamic operations, directed/multigraph hardware, and invalid physical labels. This is a declared gate-family limit, not a general semantic proof. A small equal-width unitary-layout oracle is available separately.
+The fallback router processes operations in order, advances one logical qubit along a deterministic shortest path with hardware-edge SWAPs, and updates the layout after every inserted SWAP. It preserves source global phase and returns a trace with one event per emitted operation; validation replays that trace against the source gates, classical destinations, and final layout before edge-legality checks. The Qiskit adapter accepts unconditioned one- and two-qubit gates, one-qubit resets, and a terminal measurement suffix. It rejects barriers, three-plus-qubit gates, dynamic control flow, classically conditioned gates, directed/multigraph routing inputs, and invalid physical labels. This is a declared gate-family limit, not a general semantic proof.
 
-The Basic baseline uses identity mapping plus this router. The SABRE adapter delegates to Qiskit with a fixed seed, symmetric coupling edges for the same undirected graph interpretation, and validates physical edge legality. On equal-width unitary circuits of at most six qubits, it also interprets Qiskit's initial/final transpiler layouts for the same small unitary check. Wider and idle-site cases return an unassessed semantic status; a general validator is still needed before comparative paper results.
+The Basic baseline uses identity mapping plus this router. The SABRE adapter delegates to Qiskit with a fixed seed, symmetric coupling edges for the same undirected routing interpretation, and validates physical edge legality. Equal-width unitary circuits of at most six qubits use an exact layout-aware unitary check. Wider circuits and outputs with idle physical sites use deterministic layout-aware statevector probes up to 12 physical qubits. Resets and terminal measurements remain structurally replayed rather than numerically simulated. Dynamic classical control is still unsupported.
+
+Directed hardware is evaluated as a separate lowering stage. Reverse CNOTs are synthesized by Hadamard conjugation around an available forward CNOT, and SWAPs are decomposed into three direction-lowered CNOTs. Declared durations and synthetic edge-error costs are computed only after the lowered circuit passes ordered-coupler legality.
 
 The list scheduler operates only after a legal route is fixed. It builds dependencies from each physical qubit's gate order, ranks ready gates by remaining critical path, and records earliest start/finish times and layers. Optional positive gate durations produce a timed makespan. It never reroutes or swaps gates across a shared wire. Its `depth_delta` is `scheduled_depth - routed_depth` for the same circuit; under unit durations this is normally zero because Qiskit already computes parallel dependency depth.
 
@@ -63,7 +66,7 @@ The CP-SAT implementation is an exact initial-mapping oracle for small instances
 
 ## Testing and reproducibility
 
-The pytest suite covers graph weights and decay, deterministic/injective mapping, strict local-search descent, shortest-path tie-breaking, global-phase preservation, unsupported-input failures, route replay and layout consistency, small unitary equivalence for QWeave and equal-width SABRE output, scheduling order/timing, the guarded Gymnasium contract, action masking, GNN--PPO checkpointing/training, benchmark split integrity, SABRE smoke execution, and a known tiny mapping-oracle optimum. Randomness is explicit and seeded. Results include configuration, seed, timestamp, metrics, and validation status. Experimental superiority and novelty are not claimed before measured results exist.
+The 69-test suite covers graph weights and decay, deterministic/injective mapping, strict local-search descent, shortest-path tie-breaking, global-phase and classical-target preservation, resets and terminal measurements, explicit dynamic-control rejection, route replay and layout consistency, exact and probe-based semantic checks, idle physical sites, directed-gate synthesis, scheduling order/timing, the guarded Gymnasium contract, action masking, GNN--PPO checkpointing/training, benchmark split integrity, SABRE execution, paired statistics, and a known tiny mapping-oracle optimum. Randomness is explicit and seeded. Results include configuration, seed, timestamp, metrics, and validation status.
 
 `scripts/run_scheduler_check.py` writes a new immutable JSON record for three four-qubit smoke circuits on a four-site line. It reports Basic, weighted, and SABRE routed versus scheduled depth on each *fixed* compiled circuit. CP-SAT contributes only its small initial-mapping objective/status. This check is not a frozen benchmark or evidence of general improvement.
 
@@ -81,11 +84,24 @@ The pushed baseline was independently reproduced from a clean clone; see the
 frozen before evaluation in the [v2 protocol](docs/BENCHMARK_V2_PROTOCOL.md)
 and [immutable manifest](benchmarks/benchmark_v2_manifest.json).
 
+Benchmark v2 contains 180 frozen cases and 36 untouched test cases. The full
+study produced 792 method/seed/case records, ten endpoint checkpoints, and
+five-seed learning curves. Every tested output passed its applicable numerical
+semantic check, and every direction-lowered cost circuit passed directed
+legality. The paired GNN--PPO minus weighted depth difference was 0 gates with
+a 95% bootstrap interval of [0, 0]; GNN--PPO and no-message PPO also had paired
+median depth and SWAP differences of 0 [0, 0]. Training greatly improved over
+the untrained graph control, but this study does not show a message-passing or
+learned-routing advantage over the deterministic references. See the
+[reviewed v2 report](results/benchmark_v2/REPORT.md),
+[machine-readable summary](results/benchmark_v2/summary.json), and retained
+[raw record](results/benchmark_v2/raw.json).
+
 The earlier [research blueprint](docs/blueprint/README.md) is archived with its PDF and editable sources. It is planning material; the implemented status is described here and in the baseline audit.
 
 ## Current implementation status
 
-Implemented: weighted interaction graph, initial mapping, local search, deterministic fallback routing, Basic and SABRE baselines, route-replay and legality checks, small unitary-layout checks, depth-aware list scheduling, metrics, CP-SAT mapping oracle, a guarded Gymnasium routing environment, masked graph actor-critic, PPO training, ablation controls, and a frozen learned-routing benchmark harness. A full exact-routing formulation remains outside the current scope; the CP-SAT component remains an initial-mapping oracle only.
+Implemented: weighted interaction graph, initial mapping, local search, deterministic fallback routing, Basic and SABRE baselines, route replay, exact and probe-based semantic checks, reset and terminal-measurement preservation, directed-coupler lowering, depth-aware list scheduling, declared duration/error proxies, metrics, a CP-SAT mapping oracle, a guarded Gymnasium routing environment, masked graph actor-critic, PPO training, ablation controls, a frozen benchmark-v2 harness, checkpoints, and paired bootstrap analysis. Dynamic classical control and a full exact-routing formulation remain outside the current scope; the CP-SAT component remains an initial-mapping oracle only.
 
 Team roles are documented in `AGENTS.md`: Atharva Sheersh Pandey owns integration and Qiskit adapters; Shrivardhini N owns formal model and scheduler; Diptesh Das owns deterministic optimisation, routing, baselines, and oracle; Haridasu Sreedhar owns RL/GNN/PPO work.
 
