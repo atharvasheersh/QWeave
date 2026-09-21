@@ -7,8 +7,9 @@ items before an external submission or public preprint upload.
 ## Required metadata
 
 - [ ] Confirm the paper title.
-- [ ] Confirm author order independently of code ownership.
-- [ ] Add each author's full affiliation and institutional address.
+- [x] Confirm author order independently of code ownership.
+- [x] Add the School of Computer Science and Engineering, VIT Vellore,
+      affiliation for the four student authors and identify the faculty guide.
 - [ ] Select the corresponding author and add the approved contact email.
 - [ ] Add ORCID identifiers where available.
 - [ ] Approve a CRediT contribution statement.

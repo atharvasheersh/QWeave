@@ -7,7 +7,9 @@ full benchmark-v2 training and ablation study. The reported result is bounded:
 PPO training improves on the untrained policy, while the tested message passing
 and learned paths do not improve paired median outcomes over the deterministic
 references. The generated Word and PDF copies are kept separately under
-`docx/` and `pdf/`. Team author order and venue format remain to be agreed.
+`docx/` and `pdf/`. The author order is Atharva Sheersh Pandey, Diptesh Das,
+Shrivardhini N, Haridasu Sreedhar, and faculty guide Prof. Bhuvaneswari M.
+The venue format remains to be agreed.
 Bibliography entries and their supporting claims were checked against the
 linked primary records and IBM Quantum documentation on 2026-09-21. See the
 [academic audit](../docs/ACADEMIC_AUDIT_2026-09-21.md) and the

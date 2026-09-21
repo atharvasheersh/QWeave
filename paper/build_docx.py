@@ -29,6 +29,19 @@ REFERENCES = [
     "IBM Quantum. Transpiler stages. IBM Quantum Documentation, 2026.",
     "IBM Quantum. SabreLayout API reference. IBM Quantum Documentation, 2026.",
 ]
+AUTHORS = (
+    ("Atharva Sheersh Pandey", "1"),
+    ("Diptesh Das", "1"),
+    ("Shrivardhini N", "1"),
+    ("Haridasu Sreedhar", "1"),
+    ("Prof. Bhuvaneswari M", "2"),
+)
+STUDENT_EMAILS = (
+    "atharva.sheersh2024@vitstudent.ac.in",
+    "diptesh.das2024@vitstudent.ac.in",
+    "shrivardhini.n2024@vitstudent.ac.in",
+    "haridasu.sreedhar2024@vitstudent.ac.in",
+)
 
 
 def _field(paragraph, instruction: str) -> None:
@@ -85,6 +98,51 @@ def _add_body_paragraph(document: Document, text: str) -> None:
     paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     paragraph.paragraph_format.first_line_indent = Cm(0.35)
     paragraph.paragraph_format.space_after = Pt(3)
+
+
+def _add_author_block(document: Document) -> None:
+    paragraph = document.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_after = Pt(3)
+    for index, (name, marker) in enumerate(AUTHORS):
+        if index:
+            paragraph.add_run(", ")
+        if index == 3:
+            paragraph.add_run().add_break()
+        name_run = paragraph.add_run(name)
+        name_run.font.name = "Times New Roman"
+        name_run.font.size = Pt(10)
+        marker_run = paragraph.add_run(marker)
+        marker_run.font.name = "Times New Roman"
+        marker_run.font.size = Pt(7)
+        marker_run.font.superscript = True
+
+    paragraph = document.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_after = Pt(3)
+    for index, email in enumerate(STUDENT_EMAILS):
+        if index:
+            paragraph.add_run("; ")
+        if index == 2:
+            paragraph.add_run().add_break()
+        run = paragraph.add_run(email)
+        run.font.name = "Times New Roman"
+        run.font.size = Pt(9)
+
+    for marker, text in (
+        ("1", "School of Computer Science and Engineering, VIT Vellore"),
+        ("2", "Faculty Guide, School of Computer Science and Engineering, VIT Vellore"),
+    ):
+        paragraph = document.add_paragraph()
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        paragraph.paragraph_format.space_after = Pt(0)
+        marker_run = paragraph.add_run(marker)
+        marker_run.font.name = "Times New Roman"
+        marker_run.font.size = Pt(7)
+        marker_run.font.superscript = True
+        text_run = paragraph.add_run(text)
+        text_run.font.name = "Times New Roman"
+        text_run.font.size = Pt(9)
 
 
 def _add_results_table(document: Document) -> None:
@@ -163,8 +221,6 @@ def _add_learning_figure(document: Document) -> None:
 def build() -> Path:
     source = SOURCE.read_text(encoding="utf-8")
     title = re.search(r"\\title\{(.+?)\}", source).group(1)
-    author = re.search(r"\\author\{(.+?)\}", source).group(1)
-    date = re.search(r"\\date\{(.+?)\}", source).group(1)
     abstract = re.search(r"\\begin\{abstract\}(.*?)\\end\{abstract\}", source, re.S).group(1)
     body = source.split(r"\end{abstract}", 1)[1].split(r"\bibliographystyle", 1)[0]
     body = re.sub(r"\\begin\{table\}.*?\\end\{table\}", "\n\n[[RESULTS_TABLE]]\n\n", body, flags=re.S)
@@ -205,12 +261,8 @@ def build() -> Path:
     title_run.bold = True
     title_run.font.name = "Times New Roman"
     title_run.font.size = Pt(16)
-    paragraph.paragraph_format.space_after = Pt(10)
-    paragraph = document.add_paragraph(_clean(author))
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    paragraph.runs[0].bold = True
-    paragraph = document.add_paragraph(_clean(date))
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_after = Pt(8)
+    _add_author_block(document)
     heading = document.add_paragraph("Abstract")
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
     heading.runs[0].bold = True
@@ -254,7 +306,7 @@ def build() -> Path:
     footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _field(footer, "PAGE")
     document.core_properties.title = _clean(title)
-    document.core_properties.author = "QWeave Research Team"
+    document.core_properties.author = "; ".join(name for name, _ in AUTHORS)
     document.core_properties.subject = "Correctness-first qubit mapping and routing study"
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     document.save(OUTPUT)
