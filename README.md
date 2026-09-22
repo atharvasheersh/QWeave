@@ -97,8 +97,6 @@ learned-routing advantage over the deterministic references. See the
 [machine-readable summary](results/benchmark_v2/summary.json), and retained
 [raw record](results/benchmark_v2/raw.json).
 
-The earlier [research blueprint](docs/blueprint/README.md) is archived with its PDF and editable sources. It is planning material; the implemented status is described here and in the baseline audit.
-
 The [benchmark-v2 academic audit](docs/ACADEMIC_AUDIT_2026-09-21.md) records
 the primary-source citation check, successful GitHub Actions run, locked clean
 clone, 69-test result, artifact hashes, and exact full-study reproduction. The
